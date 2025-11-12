@@ -1,0 +1,18 @@
+{
+  "baseTaxPerCitizen": 10,
+  "monthDurationSeconds": 30,
+  "maintenance": {
+    "road": 1,
+    "house": 2,
+    "hospital": 50,
+    "school": 40,
+    "police": 45,
+    "fire": 45,
+    "park": 5,
+    "monument": 20
+  },
+  "happinessIncomeBonus": 0.5,
+  "taxMin": 5,
+  "taxMax": 25
+}
+

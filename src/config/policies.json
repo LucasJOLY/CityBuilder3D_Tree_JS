@@ -1,0 +1,36 @@
+[
+  {
+    "id": "low_taxes",
+    "label": "Taxes réduites",
+    "taxMultiplier": 0.8,
+    "happinessDelta": 5,
+    "maintenanceMultiplier": 1.0
+  },
+  {
+    "id": "high_taxes",
+    "label": "Taxes élevées",
+    "taxMultiplier": 1.3,
+    "happinessDelta": -5,
+    "maintenanceMultiplier": 1.0
+  },
+  {
+    "id": "police_funding",
+    "label": "Financement police",
+    "crimeDelta": -10,
+    "maintenancePoliceMultiplier": 1.5,
+    "happinessDelta": 2
+  },
+  {
+    "id": "education_priority",
+    "label": "Priorité éducation",
+    "happinessDelta": 8,
+    "maintenanceMultiplier": 1.2
+  },
+  {
+    "id": "green_city",
+    "label": "Ville verte",
+    "happinessDelta": 10,
+    "maintenanceMultiplier": 1.1
+  }
+]
+

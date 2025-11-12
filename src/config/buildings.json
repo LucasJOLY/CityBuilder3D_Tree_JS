@@ -1,0 +1,83 @@
+{
+  "road": {
+    "size": [1, 1],
+    "cost": 5,
+    "requiresRoad": false,
+    "citizens": 0,
+    "capacity": 0,
+    "coverage": 0,
+    "happiness": 0,
+    "maintKey": "road"
+  },
+  "house": {
+    "size": [2, 2],
+    "cost": 50,
+    "requiresRoad": true,
+    "citizens": 4,
+    "capacity": 0,
+    "coverage": 0,
+    "happiness": 0,
+    "maintKey": "house"
+  },
+  "hospital": {
+    "size": [3, 3],
+    "cost": 500,
+    "requiresRoad": true,
+    "citizens": 0,
+    "capacity": 100,
+    "coverage": 10,
+    "happiness": 3,
+    "maintKey": "hospital"
+  },
+  "school": {
+    "size": [3, 3],
+    "cost": 400,
+    "requiresRoad": true,
+    "citizens": 0,
+    "capacity": 80,
+    "coverage": 8,
+    "happiness": 2,
+    "maintKey": "school"
+  },
+  "police": {
+    "size": [2, 2],
+    "cost": 350,
+    "requiresRoad": true,
+    "citizens": 0,
+    "capacity": 0,
+    "coverage": 12,
+    "happiness": 1,
+    "maintKey": "police"
+  },
+  "fire": {
+    "size": [2, 2],
+    "cost": 300,
+    "requiresRoad": true,
+    "citizens": 0,
+    "capacity": 0,
+    "coverage": 10,
+    "happiness": 1,
+    "maintKey": "fire"
+  },
+  "park": {
+    "size": [2, 2],
+    "cost": 100,
+    "requiresRoad": false,
+    "citizens": 0,
+    "capacity": 0,
+    "coverage": 5,
+    "happiness": 5,
+    "maintKey": "park"
+  },
+  "monument": {
+    "size": [3, 3],
+    "cost": 2000,
+    "requiresRoad": true,
+    "citizens": 0,
+    "capacity": 0,
+    "coverage": 15,
+    "happiness": 15,
+    "maintKey": "monument"
+  }
+}
+
