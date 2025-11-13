@@ -14,28 +14,35 @@ import {
   FaFire,
   FaTree,
   FaMonument,
+  FaBuilding,
 } from 'react-icons/fa'
 import { Trash2, Move, X } from 'lucide-react'
 
 const buildingLabels: Record<BuildingType, string> = {
   road: 'Route',
+  roadTurn: 'Virage',
   house: 'Maison',
+  apartment: 'Immeuble HLM',
   hospital: 'Hôpital',
   school: 'École',
   police: 'Commissariat',
   fire: 'Caserne de pompiers',
   park: 'Parc',
+  parkLarge: 'Grand parc',
   monument: 'Monument',
 }
 
 const buildingIcons: Record<BuildingType, React.ReactNode> = {
   road: <FaRoad className="w-8 h-8" />,
+  roadTurn: <FaRoad className="w-8 h-8" />,
   house: <FaHome className="w-8 h-8" />,
+  apartment: <FaBuilding className="w-8 h-8" />,
   hospital: <FaHospital className="w-8 h-8" />,
   school: <FaSchool className="w-8 h-8" />,
   police: <FaShieldAlt className="w-8 h-8" />,
   fire: <FaFire className="w-8 h-8" />,
   park: <FaTree className="w-8 h-8" />,
+  parkLarge: <FaTree className="w-8 h-8" />,
   monument: <FaMonument className="w-8 h-8" />,
 }
 
@@ -131,8 +138,12 @@ export function BuildingInfo() {
       }
     }
 
-    if (buildingConfig.happiness > 0) {
-      effects.push(`+${buildingConfig.happiness}% de bonheur`)
+    if (buildingConfig.happiness !== 0) {
+      if (buildingConfig.happiness > 0) {
+        effects.push(`+${buildingConfig.happiness}% de bonheur`)
+      } else {
+        effects.push(`${buildingConfig.happiness}% de bonheur`)
+      }
     }
 
     return effects
@@ -255,7 +266,7 @@ export function BuildingInfo() {
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDelete}
         title="Supprimer le bâtiment"
-        message={`Êtes-vous sûr de vouloir supprimer ce ${buildingLabels[buildingType]} ? Cette action est irréversible.`}
+        message={`Êtes-vous sûr de vouloir supprimer ce bâtiment ? Cette action est irréversible.`}
         confirmText="Supprimer"
         cancelText="Annuler"
         confirmColor="error"

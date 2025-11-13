@@ -12,23 +12,60 @@ export function GridPlane() {
   const pickerRef = useRef<GridPicker | null>(null)
   const { camera, size, gl } = useThree()
   const { enqueueSnackbar } = useSnackbar()
-  const grid = useWorldStore((state) => state.grid)
-  const selectedBuilding = useWorldStore((state) => state.selectedBuilding)
-  const selectedPlacedBuilding = useWorldStore((state) => state.selectedPlacedBuilding)
-  const isMovingBuilding = useWorldStore((state) => state.isMovingBuilding)
-  const placementRotation = useWorldStore((state) => state.placementRotation)
-  const setHoveredCell = useWorldStore((state) => state.setHoveredCell)
-  const placeBuilding = useWorldStore((state) => state.placeBuilding)
-  const moveBuilding = useWorldStore((state) => state.moveBuilding)
-  const setIsMovingBuilding = useWorldStore((state) => state.setIsMovingBuilding)
-  const money = useGameStore((state) => state.money)
-  const addMoney = useGameStore((state) => state.addMoney)
+  const grid = useWorldStore(state => state.grid)
+  const selectedBuilding = useWorldStore(state => state.selectedBuilding)
+  const selectedPlacedBuilding = useWorldStore(state => state.selectedPlacedBuilding)
+  const isMovingBuilding = useWorldStore(state => state.isMovingBuilding)
+  const placementRotation = useWorldStore(state => state.placementRotation)
+  const setHoveredCell = useWorldStore(state => state.setHoveredCell)
+  const placeBuilding = useWorldStore(state => state.placeBuilding)
+  const moveBuilding = useWorldStore(state => state.moveBuilding)
+  const setIsMovingBuilding = useWorldStore(state => state.setIsMovingBuilding)
+  const setSelectedBuilding = useWorldStore(state => state.setSelectedBuilding)
+  const setSelectedPlacedBuilding = useWorldStore(state => state.setSelectedPlacedBuilding)
+  const money = useGameStore(state => state.money)
+  const addMoney = useGameStore(state => state.addMoney)
 
   useEffect(() => {
-    loadGameConfig().then((config) => {
+    loadGameConfig().then(config => {
       pickerRef.current = new GridPicker(config.gridSize)
     })
   }, [])
+
+  // Gérer la touche Échap pour annuler placement/déplacement
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Annuler le placement
+        if (selectedBuilding) {
+          setSelectedBuilding(null)
+          enqueueSnackbar('Placement annulé', {
+            variant: 'info',
+            autoHideDuration: 2000,
+          })
+        }
+        // Annuler le déplacement
+        if (isMovingBuilding) {
+          setIsMovingBuilding(false)
+          setSelectedPlacedBuilding(null)
+          enqueueSnackbar('Déplacement annulé', {
+            variant: 'info',
+            autoHideDuration: 2000,
+          })
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [
+    selectedBuilding,
+    isMovingBuilding,
+    setSelectedBuilding,
+    setIsMovingBuilding,
+    setSelectedPlacedBuilding,
+    enqueueSnackbar,
+  ])
 
   useEffect(() => {
     console.log('GridPlane useEffect triggered', {
@@ -74,7 +111,7 @@ export function GridPlane() {
         console.log('handleMouseMove: mesh ref not available')
         return
       }
-      
+
       const rect = canvas.getBoundingClientRect()
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
@@ -83,10 +120,10 @@ export function GridPlane() {
       const intersects = raycaster.intersectObject(meshRef.current)
 
       if (intersects.length > 0) {
-        const point = intersects[0].point
+        const point = intersects[0]?.point
         const gridSize = grid.length
-        const x = Math.floor(point.x + gridSize / 2)
-        const y = Math.floor(point.z + gridSize / 2)
+        const x = Math.floor(point?.x ?? 0 + gridSize / 2)
+        const y = Math.floor(point?.z ?? 0 + gridSize / 2)
 
         if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
           setHoveredCell({ x, y })
@@ -135,13 +172,18 @@ export function GridPlane() {
       raycaster.setFromCamera(mouse, camera)
       const intersects = raycaster.intersectObject(meshRef.current)
 
-      console.log('Click detected, intersects:', intersects.length, 'Selected building:', selectedBuilding)
+      console.log(
+        'Click detected, intersects:',
+        intersects.length,
+        'Selected building:',
+        selectedBuilding
+      )
 
       if (intersects.length > 0) {
-        const point = intersects[0].point
+        const point = intersects[0]?.point
         const gridSize = grid.length
-        const x = Math.floor(point.x + gridSize / 2)
-        const y = Math.floor(point.z + gridSize / 2)
+        const x = Math.floor(point?.x ?? 0 + gridSize / 2)
+        const y = Math.floor(point?.z ?? 0 + gridSize / 2)
 
         console.log('Intersection point:', point, 'Grid cell:', { x, y })
 
@@ -158,9 +200,9 @@ export function GridPlane() {
             return
           }
 
-          const placed = placeBuilding(x, y, selectedBuilding, placementRotation)
-          console.log('Placement result:', placed, 'at', { x, y })
-          if (placed) {
+          const placed = await placeBuilding(x, y, selectedBuilding, placementRotation)
+          console.log('Placement result:', placed ?? false, 'at', { x, y })
+          if (placed ?? false) {
             addMoney(-building.cost)
             console.log('Building placed successfully!')
           } else {
@@ -185,7 +227,18 @@ export function GridPlane() {
       canvas.removeEventListener('mousemove', handleMouseMove)
       canvas.removeEventListener('click', handleClick, { capture: true })
     }
-  }, [gl, camera, size, grid, selectedBuilding, placementRotation, money, placeBuilding, addMoney, setHoveredCell])
+  }, [
+    gl,
+    camera,
+    size,
+    grid,
+    selectedBuilding,
+    placementRotation,
+    money,
+    placeBuilding,
+    addMoney,
+    setHoveredCell,
+  ])
 
   const gridSize = grid.length || 50
 
@@ -203,7 +256,7 @@ export function GridPlane() {
 
   const handlePointerDown = async (e: any) => {
     e.stopPropagation()
-    
+
     if (grid.length === 0) {
       console.log('Grid not initialized, initializing...')
       const { initializeGrid } = useWorldStore.getState()
@@ -230,12 +283,7 @@ export function GridPlane() {
       const y = Math.floor(point.z + gridSize / 2)
 
       if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
-        const moved = await moveBuilding(
-          selectedPlacedBuilding.x,
-          selectedPlacedBuilding.y,
-          x,
-          y
-        )
+        const moved = await moveBuilding(selectedPlacedBuilding.x, selectedPlacedBuilding.y, x, y)
         if (moved) {
           enqueueSnackbar('Bâtiment déplacé avec succès', {
             variant: 'success',
@@ -285,19 +333,19 @@ export function GridPlane() {
       const currentGrid = useWorldStore.getState().grid
       const buildingSize = building.size
       let hasConflict = false
-      
+
       // Vérifier toutes les cellules que ce bâtiment occuperait
       for (let dy = 0; dy < buildingSize[1]; dy++) {
         for (let dx = 0; dx < buildingSize[0]; dx++) {
           const nx = x + dx
           const ny = y + dy
-          
+
           // Vérifier les limites
           if (nx < 0 || nx >= gridSize || ny < 0 || ny >= gridSize) {
             hasConflict = true
             break
           }
-          
+
           // Vérifier si la cellule est occupée
           if (currentGrid[ny]?.[nx]?.buildingType !== null) {
             hasConflict = true
@@ -308,7 +356,7 @@ export function GridPlane() {
       }
 
       if (hasConflict) {
-        enqueueSnackbar('L\'emplacement est occupé ou invalide', {
+        enqueueSnackbar("L'emplacement est occupé ou invalide", {
           variant: 'warning',
           autoHideDuration: 3000,
         })
@@ -353,4 +401,3 @@ export function GridPlane() {
     </mesh>
   )
 }
-

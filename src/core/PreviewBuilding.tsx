@@ -14,28 +14,28 @@ interface PreviewBuildingProps {
   sourcePosition?: { x: number; y: number }
 }
 
-export function PreviewBuilding({ 
-  x, 
-  y, 
-  type, 
-  orientation, 
-  gridSize, 
+export function PreviewBuilding({
+  x,
+  y,
+  type,
+  orientation,
+  gridSize,
   isMoving = false,
-  sourcePosition 
+  sourcePosition,
 }: PreviewBuildingProps) {
   const [size, setSize] = useState<[number, number]>([1, 1])
   const [sizeLoaded, setSizeLoaded] = useState(false)
   const [sourceSize, setSourceSize] = useState<[number, number] | null>(null)
-  const grid = useWorldStore((state) => state.grid)
+  const grid = useWorldStore(state => state.grid)
 
   useEffect(() => {
-    loadBuildingsConfig().then((configs) => {
+    loadBuildingsConfig().then(configs => {
       const config = configs[type]
       if (config) {
         setSize(config.size)
         setSizeLoaded(true)
       }
-      
+
       // Charger aussi la taille du bâtiment source si en mode déplacement
       if (isMoving && sourcePosition) {
         const sourceCell = grid[sourcePosition.y]?.[sourcePosition.x]
@@ -49,10 +49,28 @@ export function PreviewBuilding({
     })
   }, [type, isMoving, sourcePosition, grid])
 
+  // Créer une dépendance basée sur les valeurs des cellules occupées pour forcer le recalcul
+  const gridCellValues = useMemo(() => {
+    if (!sizeLoaded) return ''
+
+    const values: string[] = []
+    for (let dy = 0; dy < size[1]; dy++) {
+      for (let dx = 0; dx < size[0]; dx++) {
+        const nx = x + dx
+        const ny = y + dy
+        if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
+          const cellBuilding = grid[ny]?.[nx]?.buildingType
+          values.push(`${nx},${ny}:${cellBuilding ?? 'null'}`)
+        }
+      }
+    }
+    return values.join('|')
+  }, [x, y, size, gridSize, grid, sizeLoaded])
+
   // Vérifier si le placement est valide (pas de conflit)
   const isValid = useMemo(() => {
     if (!sizeLoaded) return false // Retourner false si la taille n'est pas encore chargée
-    
+
     // Calculer toutes les cellules occupées par ce bâtiment
     const occupiedCells: { x: number; y: number }[] = []
     for (let dy = 0; dy < size[1]; dy++) {
@@ -90,14 +108,14 @@ export function PreviewBuilding({
     }
 
     return true
-  }, [x, y, size, gridSize, grid, sizeLoaded, isMoving, sourcePosition, sourceSize])
+  }, [x, y, size, gridSize, grid, sizeLoaded, isMoving, sourcePosition, sourceSize, gridCellValues])
 
   // Utiliser exactement la même logique que BuildingMesh pour garantir la même taille et position
   // BuildingMesh utilise gridSize = 50 codé en dur, donc on fait pareil ici
   const position = useMemo(() => {
     const gridSizeForPosition = 50 // Même valeur que BuildingMesh
     const offsetX = x - gridSizeForPosition / 2 + size[0] / 2
-    const height = type === 'road' ? 0.05 : Math.max(size[0], size[1]) * 0.25
+    const height = type === 'road' || type === 'roadTurn' ? 0.05 : Math.max(size[0], size[1]) * 0.25
     const offsetZ = y - gridSizeForPosition / 2 + size[1] / 2
     return [offsetX, height, offsetZ] as [number, number, number]
   }, [x, y, size, type])
@@ -111,19 +129,23 @@ export function PreviewBuilding({
   const rotation = (orientation * Math.PI) / 2
   const buildingColors: Record<BuildingType, string> = {
     road: '#444444',
+    roadTurn: '#555555',
     house: '#8B4513',
+    apartment: '#654321',
     hospital: '#FFFFFF',
     school: '#FFD700',
     police: '#0000FF',
     fire: '#FF0000',
     park: '#00FF00',
+    parkLarge: '#00AA00',
     monument: '#FFD700',
   }
   const baseColor = buildingColors[type]
   const previewColor = isValid ? baseColor : '#ff0000' // Rouge si conflit
 
   // Calculer la hauteur exactement comme dans createBuildingShape
-  const buildingHeight = type === 'road' ? 0.1 : Math.max(size[0], size[1]) * 0.5
+  const buildingHeight =
+    type === 'road' || type === 'roadTurn' ? 0.1 : Math.max(size[0], size[1]) * 0.5
 
   return (
     <group>
@@ -136,18 +158,10 @@ export function PreviewBuilding({
         <meshStandardMaterial color={previewColor} transparent opacity={0.5} />
       </Box>
       {/* Indicateur de validité au sol */}
-      <mesh
-        position={[position[0], 0.02, position[2]]}
-        rotation={[-Math.PI / 2, 0, 0]}
-      >
+      <mesh position={[position[0], 0.02, position[2]]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[size[0], size[1]]} />
-        <meshStandardMaterial
-          color={isValid ? '#00ff00' : '#ff0000'}
-          transparent
-          opacity={0.4}
-        />
+        <meshStandardMaterial color={isValid ? '#00ff00' : '#ff0000'} transparent opacity={0.4} />
       </mesh>
     </group>
   )
 }
-

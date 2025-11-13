@@ -9,6 +9,16 @@
     "happiness": 0,
     "maintKey": "road"
   },
+  "roadTurn": {
+    "size": [1, 1],
+    "cost": 5,
+    "requiresRoad": false,
+    "citizens": 0,
+    "capacity": 0,
+    "coverage": 0,
+    "happiness": 0,
+    "maintKey": "road"
+  },
   "house": {
     "size": [2, 2],
     "cost": 50,
@@ -17,6 +27,16 @@
     "capacity": 0,
     "coverage": 0,
     "happiness": 0,
+    "maintKey": "house"
+  },
+  "apartment": {
+    "size": [3, 3],
+    "cost": 200,
+    "requiresRoad": true,
+    "citizens": 20,
+    "capacity": 0,
+    "coverage": 0,
+    "happiness": -3,
     "maintKey": "house"
   },
   "hospital": {
@@ -69,6 +89,16 @@
     "happiness": 5,
     "maintKey": "park"
   },
+  "parkLarge": {
+    "size": [4, 4],
+    "cost": 300,
+    "requiresRoad": false,
+    "citizens": 0,
+    "capacity": 0,
+    "coverage": 12,
+    "happiness": 10,
+    "maintKey": "park"
+  },
   "monument": {
     "size": [3, 3],
     "cost": 2000,
@@ -80,4 +110,3 @@
     "maintKey": "monument"
   }
 }
-

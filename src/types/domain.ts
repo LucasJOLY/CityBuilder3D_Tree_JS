@@ -1,11 +1,14 @@
 export type BuildingType =
   | 'road'
+  | 'roadTurn'
   | 'house'
+  | 'apartment'
   | 'hospital'
   | 'school'
   | 'police'
   | 'fire'
   | 'park'
+  | 'parkLarge'
   | 'monument'
 
 export type TileOrientation = 0 | 1 | 2 | 3

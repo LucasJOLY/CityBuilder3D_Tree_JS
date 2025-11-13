@@ -25,10 +25,12 @@ export async function calculateHappiness(
 
   // Count buildings and their coverage
   const houses: Array<{ x: number; y: number }> = []
+  const apartments: Array<{ x: number; y: number }> = []
   const hospitals: Array<{ x: number; y: number }> = []
   const schools: Array<{ x: number; y: number }> = []
   const parks: Array<{ x: number; y: number }> = []
   const monuments: Array<{ x: number; y: number }> = []
+  let apartmentHappinessPenalty = 0
 
   for (let y = 0; y < gridSize; y++) {
     for (let x = 0; x < gridSize; x++) {
@@ -39,6 +41,10 @@ export async function calculateHappiness(
         case 'house':
           houses.push({ x, y })
           break
+        case 'apartment':
+          apartments.push({ x, y })
+          apartmentHappinessPenalty += 3 // -3% par immeuble HLM
+          break
         case 'hospital':
           hospitals.push({ x, y })
           break
@@ -48,6 +54,9 @@ export async function calculateHappiness(
         case 'park':
           parks.push({ x, y })
           break
+        case 'parkLarge':
+          parks.push({ x, y })
+          break
         case 'monument':
           monuments.push({ x, y })
           break
@@ -55,7 +64,7 @@ export async function calculateHappiness(
     }
   }
 
-  // Calculate coverage bonuses
+  // Calculate coverage bonuses for houses
   for (const house of houses) {
     let coveredByPark = false
     let coveredByMonument = false
@@ -63,7 +72,10 @@ export async function calculateHappiness(
     let coveredBySchool = false
 
     for (const park of parks) {
-      if (manhattanDistance(house.x, house.y, park.x, park.y) <= 5) {
+      const distance = manhattanDistance(house.x, house.y, park.x, park.y)
+      // Grand parc a une portée plus grande
+      const parkCoverage = grid[park.y]?.[park.x]?.buildingType === 'parkLarge' ? 12 : 5
+      if (distance <= parkCoverage) {
         coveredByPark = true
         break
       }
@@ -96,8 +108,53 @@ export async function calculateHappiness(
     if (coveredBySchool) servicesBonus += 2
   }
 
-  const avgParksBonus = houses.length > 0 ? parksBonus / houses.length : 0
-  const avgServicesBonus = houses.length > 0 ? servicesBonus / houses.length : 0
+  // Calculate coverage bonuses for apartments (same logic)
+  for (const apartment of apartments) {
+    let coveredByPark = false
+    let coveredByMonument = false
+    let coveredByHospital = false
+    let coveredBySchool = false
+
+    for (const park of parks) {
+      const distance = manhattanDistance(apartment.x, apartment.y, park.x, park.y)
+      const parkCoverage = grid[park.y]?.[park.x]?.buildingType === 'parkLarge' ? 12 : 5
+      if (distance <= parkCoverage) {
+        coveredByPark = true
+        break
+      }
+    }
+
+    for (const monument of monuments) {
+      if (manhattanDistance(apartment.x, apartment.y, monument.x, monument.y) <= 15) {
+        coveredByMonument = true
+        break
+      }
+    }
+
+    for (const hospital of hospitals) {
+      if (manhattanDistance(apartment.x, apartment.y, hospital.x, hospital.y) <= 10) {
+        coveredByHospital = true
+        break
+      }
+    }
+
+    for (const school of schools) {
+      if (manhattanDistance(apartment.x, apartment.y, school.x, school.y) <= 8) {
+        coveredBySchool = true
+        break
+      }
+    }
+
+    if (coveredByPark) parksBonus += 5
+    if (coveredByMonument) parksBonus += 15
+    if (coveredByHospital) servicesBonus += 3
+    if (coveredBySchool) servicesBonus += 2
+  }
+
+  const totalResidential = houses.length + apartments.length
+  const avgParksBonus = totalResidential > 0 ? parksBonus / totalResidential : 0
+  const avgServicesBonus = totalResidential > 0 ? servicesBonus / totalResidential : 0
+  const avgApartmentPenalty = totalResidential > 0 ? apartmentHappinessPenalty / totalResidential : 0
 
   // Policy bonuses
   let policyBonus = 0
@@ -115,7 +172,7 @@ export async function calculateHappiness(
     0,
     Math.min(
       100,
-      base + avgParksBonus + avgServicesBonus + policyBonus - crimePenalty
+      base + avgParksBonus + avgServicesBonus + policyBonus - crimePenalty - avgApartmentPenalty
     )
   )
 

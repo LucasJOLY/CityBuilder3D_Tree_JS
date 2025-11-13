@@ -32,7 +32,7 @@ export function BuildingMesh({ x, y, type, orientation }: BuildingMeshProps) {
   const position = useMemo(() => {
     const gridSize = 50
     const offsetX = x - gridSize / 2 + size[0] / 2
-    const height = type === 'road' ? 0.05 : Math.max(size[0], size[1]) * 0.25
+    const height = type === 'road' || type === 'roadTurn' ? 0.05 : Math.max(size[0], size[1]) * 0.25
     const offsetZ = y - gridSize / 2 + size[1] / 2
     return [offsetX, height, offsetZ] as [number, number, number]
   }, [x, y, size, type])

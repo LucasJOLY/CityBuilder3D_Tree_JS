@@ -12,12 +12,15 @@ export interface BuildingShapeProps {
 
 const buildingColors: Record<BuildingType, string> = {
   road: '#444444',
+  roadTurn: '#555555',
   house: '#8B4513',
+  apartment: '#654321',
   hospital: '#FFFFFF',
   school: '#FFD700',
   police: '#0000FF',
   fire: '#FF0000',
   park: '#00FF00',
+  parkLarge: '#00AA00',
   monument: '#FFD700',
 }
 
@@ -37,7 +40,7 @@ export function createBuildingShape({
   const color = buildingColors[type]
 
   // Routes: rectangles légèrement épais
-  if (type === 'road') {
+  if (type === 'road' || type === 'roadTurn') {
     return (
       <Box
         key={key || `${position[0]}-${position[2]}`}
@@ -66,4 +69,3 @@ export function createBuildingShape({
     </Box>
   )
 }
-
