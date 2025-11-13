@@ -17,8 +17,9 @@ interface GameStore extends GameState {
   loadState: (state: GameState) => void
 }
 
+// Initial state will be set by reset() on first load
 const initialState: GameState = {
-  money: 0,
+  money: 10000, // Default, will be overridden by reset()
   citizens: 0,
   happiness: 50,
   currentTax: 10,

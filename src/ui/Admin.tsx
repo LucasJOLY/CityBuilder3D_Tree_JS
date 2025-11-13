@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Box, Typography, TextField, Paper, Grid } from '@mui/material'
 import { Modal } from './components/Modal'
 import { Button } from './components/Button'
 import { useUIStore } from '@/stores/ui-store'
@@ -49,80 +50,94 @@ export function Admin() {
   if (!isOpen) return null
 
   return (
-    <Modal isOpen={isOpen} onClose={closeAdmin} title="Panneau Admin">
+    <Modal
+      isOpen={isOpen}
+      onClose={closeAdmin}
+      title="Panneau Admin"
+    >
       {!isAuthenticated ? (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Code d'accès
-            </label>
-            <input
-              type="password"
-              value={adminCode}
-              onChange={(e) => setAdminCode(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmitCode()}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="Entrez le code admin"
-            />
-          </div>
-          <Button onClick={handleSubmitCode} className="w-full">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            label="Code d'accès"
+            type="password"
+            value={adminCode}
+            onChange={(e) => setAdminCode(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmitCode()}
+            placeholder="Entrez le code admin"
+            fullWidth
+          />
+          <Button onClick={handleSubmitCode} fullWidth>
             Accéder
           </Button>
-        </div>
+        </Box>
       ) : (
-        <div className="space-y-4">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-            <p className="text-sm text-yellow-800">
-              ⚠️ Mode admin activé. Les cheats désactivent les contraintes du jeu.
-            </p>
-          </div>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 border-2 border-gray-200 rounded-xl">
-              <h3 className="font-semibold mb-2">Argent</h3>
-              <div className="space-y-2">
-                <Button onClick={() => handleCheat('money', 10000)} size="sm" className="w-full">
-                  +10 000 €
-                </Button>
-                <Button onClick={() => handleCheat('money', 50000)} size="sm" className="w-full">
-                  +50 000 €
-                </Button>
-                <Button onClick={() => handleCheat('money', 100000)} size="sm" className="w-full">
-                  +100 000 €
-                </Button>
-              </div>
-            </div>
 
-            <div className="p-4 border-2 border-gray-200 rounded-xl">
-              <h3 className="font-semibold mb-2">Citoyens</h3>
-              <div className="space-y-2">
-                <Button onClick={() => handleCheat('citizens', 50)} size="sm" className="w-full">
-                  +50
-                </Button>
-                <Button onClick={() => handleCheat('citizens', 100)} size="sm" className="w-full">
-                  +100
-                </Button>
-                <Button onClick={() => handleCheat('citizens', 500)} size="sm" className="w-full">
-                  +500
-                </Button>
-              </div>
-            </div>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <Paper elevation={1} sx={{ p: 2, border: 2, borderColor: 'grey.300' }}>
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                  Argent
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Button onClick={() => handleCheat('money', 10000)} size="sm" fullWidth>
+                    +10 000 €
+                  </Button>
+                  <Button onClick={() => handleCheat('money', 50000)} size="sm" fullWidth>
+                    +50 000 €
+                  </Button>
+                  <Button onClick={() => handleCheat('money', 100000)} size="sm" fullWidth>
+                    +100 000 €
+                  </Button>
+                </Box>
+              </Paper>
+            </Grid>
 
-            <div className="p-4 border-2 border-gray-200 rounded-xl col-span-2">
-              <h3 className="font-semibold mb-2">Bonheur</h3>
-              <div className="grid grid-cols-3 gap-2">
-                <Button onClick={() => handleCheat('happiness', 50)} size="sm">
-                  50%
-                </Button>
-                <Button onClick={() => handleCheat('happiness', 75)} size="sm">
-                  75%
-                </Button>
-                <Button onClick={() => handleCheat('happiness', 100)} size="sm">
-                  100%
-                </Button>
-              </div>
-            </div>
-          </div>
+            <Grid item xs={6}>
+              <Paper elevation={1} sx={{ p: 2, border: 2, borderColor: 'grey.300' }}>
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                  Citoyens
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Button onClick={() => handleCheat('citizens', 50)} size="sm" fullWidth>
+                    +50
+                  </Button>
+                  <Button onClick={() => handleCheat('citizens', 100)} size="sm" fullWidth>
+                    +100
+                  </Button>
+                  <Button onClick={() => handleCheat('citizens', 500)} size="sm" fullWidth>
+                    +500
+                  </Button>
+                </Box>
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Paper elevation={1} sx={{ p: 2, border: 2, borderColor: 'grey.300' }}>
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                  Bonheur
+                </Typography>
+                <Grid container spacing={1}>
+                  <Grid item xs={4}>
+                    <Button onClick={() => handleCheat('happiness', 50)} size="sm" fullWidth>
+                      50%
+                    </Button>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Button onClick={() => handleCheat('happiness', 75)} size="sm" fullWidth>
+                      75%
+                    </Button>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Button onClick={() => handleCheat('happiness', 100)} size="sm" fullWidth>
+                      100%
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Paper>
+            </Grid>
+          </Grid>
 
           <Button
             onClick={() => {
@@ -130,11 +145,11 @@ export function Admin() {
               setAdminCode('')
             }}
             variant="danger"
-            className="w-full"
+            fullWidth
           >
             Déconnexion
           </Button>
-        </div>
+        </Box>
       )}
     </Modal>
   )

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Box, Typography, Paper, Switch, FormControlLabel } from '@mui/material'
 import { Modal } from './components/Modal'
 import { Button } from './components/Button'
 import { useUIStore } from '@/stores/ui-store'
@@ -19,82 +20,94 @@ export function Policies() {
 
   return (
     <Modal isOpen={isOpen} onClose={closePolicies} title="Politiques">
-      <div className="space-y-4">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {policies.map((policy) => {
           const isActive = activePolicies.includes(policy.id)
           return (
-            <div
+            <Paper
               key={policy.id}
-              className={`p-4 rounded-xl border-2 ${
-                isActive ? 'border-primary bg-primary-50' : 'border-gray-200'
-              }`}
+              elevation={isActive ? 2 : 1}
+              sx={{
+                p: 2,
+                border: 2,
+                borderColor: isActive ? 'primary.main' : 'grey.300',
+                bgcolor: isActive ? 'primary.50' : 'background.paper',
+              }}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 mb-2">{policy.label}</h3>
-                  <div className="space-y-1 text-sm text-gray-600">
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                    {policy.label}
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                     {policy.taxMultiplier && (
-                      <p>
+                      <Typography variant="body2" color="text.secondary">
                         Multiplicateur taxes:{' '}
-                        <span className="font-semibold">
+                        <Typography component="span" sx={{ fontWeight: 600 }}>
                           {policy.taxMultiplier > 1 ? '+' : ''}
                           {((policy.taxMultiplier - 1) * 100).toFixed(0)}%
-                        </span>
-                      </p>
+                        </Typography>
+                      </Typography>
                     )}
                     {policy.happinessDelta && (
-                      <p>
+                      <Typography variant="body2" color="text.secondary">
                         Bonheur:{' '}
-                        <span
-                          className={`font-semibold ${
-                            policy.happinessDelta > 0 ? 'text-green-600' : 'text-red-600'
-                          }`}
+                        <Typography
+                          component="span"
+                          sx={{
+                            fontWeight: 600,
+                            color: policy.happinessDelta > 0 ? 'success.main' : 'error.main',
+                          }}
                         >
                           {policy.happinessDelta > 0 ? '+' : ''}
                           {policy.happinessDelta}%
-                        </span>
-                      </p>
+                        </Typography>
+                      </Typography>
                     )}
                     {policy.crimeDelta && (
-                      <p>
+                      <Typography variant="body2" color="text.secondary">
                         Criminalité:{' '}
-                        <span
-                          className={`font-semibold ${
-                            policy.crimeDelta < 0 ? 'text-green-600' : 'text-red-600'
-                          }`}
+                        <Typography
+                          component="span"
+                          sx={{
+                            fontWeight: 600,
+                            color: policy.crimeDelta < 0 ? 'success.main' : 'error.main',
+                          }}
                         >
                           {policy.crimeDelta > 0 ? '+' : ''}
                           {policy.crimeDelta}%
-                        </span>
-                      </p>
+                        </Typography>
+                      </Typography>
                     )}
                     {policy.maintenanceMultiplier && (
-                      <p>
+                      <Typography variant="body2" color="text.secondary">
                         Maintenance:{' '}
-                        <span className="font-semibold">
+                        <Typography component="span" sx={{ fontWeight: 600 }}>
                           {policy.maintenanceMultiplier > 1 ? '+' : ''}
                           {((policy.maintenanceMultiplier - 1) * 100).toFixed(0)}%
-                        </span>
-                      </p>
+                        </Typography>
+                      </Typography>
                     )}
-                  </div>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer ml-4">
-                  <input
-                    type="checkbox"
-                    checked={isActive}
-                    onChange={() => togglePolicy(policy.id)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                </label>
-              </div>
-            </div>
+                  </Box>
+                </Box>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={isActive}
+                      onChange={() => togglePolicy(policy.id)}
+                      color="primary"
+                    />
+                  }
+                  label=""
+                  sx={{ ml: 2 }}
+                />
+              </Box>
+            </Paper>
           )
         })}
-      </div>
+      </Box>
 
-      <Button onClick={closePolicies} className="w-full mt-6">
+      <Button onClick={closePolicies} fullWidth sx={{ mt: 3 }}>
         Fermer
       </Button>
     </Modal>

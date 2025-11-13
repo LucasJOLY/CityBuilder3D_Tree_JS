@@ -1,15 +1,18 @@
 import { useEffect } from 'react'
+import { ThemeProvider, CssBaseline } from '@mui/material'
+import { SnackbarProvider } from 'notistack'
 import { useUIStore } from '@/stores/ui-store'
 import { useGameStore } from '@/stores/game-store'
 import { useWorldStore } from '@/stores/world-store'
 import { MainMenu } from '@/ui/MainMenu'
 import { Canvas3D } from '@/core/Canvas3D'
 import { HUD } from '@/ui/HUD'
+import { theme } from './theme'
 
 function App() {
-  const currentScreen = useUIStore((state) => state.currentScreen)
-  const rotatePlacement = useWorldStore((state) => state.rotatePlacement)
-  const selectedBuilding = useWorldStore((state) => state.selectedBuilding)
+  const currentScreen = useUIStore(state => state.currentScreen)
+  const rotatePlacement = useWorldStore(state => state.rotatePlacement)
+  const selectedBuilding = useWorldStore(state => state.selectedBuilding)
 
   useEffect(() => {
     // Initialize game on mount
@@ -36,20 +39,24 @@ function App() {
   }, [selectedBuilding, rotatePlacement])
 
   return (
-    <div className="w-screen h-screen overflow-hidden">
-      {currentScreen === 'menu' ? (
-        <MainMenu />
-      ) : (
-        <>
-          <div className="absolute inset-0">
-            <Canvas3D />
-          </div>
-          <HUD />
-        </>
-      )}
-    </div>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
+        <div className="w-screen h-screen overflow-hidden">
+          {currentScreen === 'menu' ? (
+            <MainMenu />
+          ) : (
+            <>
+              <div className="absolute inset-0">
+                <Canvas3D />
+              </div>
+              <HUD />
+            </>
+          )}
+        </div>
+      </SnackbarProvider>
+    </ThemeProvider>
   )
 }
 
 export default App
-

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { Box, Typography, Paper } from '@mui/material'
 import { useGameStore } from '@/stores/game-store'
 import { useUIStore } from '@/stores/ui-store'
 import { useWorldStore } from '@/stores/world-store'
@@ -9,6 +9,7 @@ import { Taxes } from './Taxes'
 import { Policies } from './Policies'
 import { Zones } from './Zones'
 import { Admin } from './Admin'
+import { BuildingInfo } from './BuildingInfo'
 import { saveGame } from '@/utils/save-manager'
 import { calculateMonthlyIncome } from '@/sim/economy'
 import { countBuildings } from '@/world/tiles'
@@ -27,6 +28,7 @@ export function HUD() {
   const setHappiness = useGameStore((state) => state.setHappiness)
   const addMoney = useGameStore((state) => state.addMoney)
   const setCitizens = useGameStore((state) => state.setCitizens)
+  const selectedBuilding = useWorldStore((state) => state.selectedBuilding)
 
   const openShop = useUIStore((state) => state.openShop)
   const openTaxes = useUIStore((state) => state.openTaxes)
@@ -92,56 +94,125 @@ export function HUD() {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t-2 border-primary shadow-2xl z-30">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-4">
+      <Paper
+        elevation={8}
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          bgcolor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          borderTop: 2,
+          borderColor: 'primary.main',
+          zIndex: 30,
+        }}
+      >
+        <Box sx={{ maxWidth: '80rem', mx: 'auto', px: 2, py: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
             {/* Stats */}
-            <div className="flex items-center gap-6">
-              <motion.div
-                className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-xl"
-                whileHover={{ scale: 1.05 }}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              {selectedBuilding && (
+                <Paper
+                  elevation={2}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    bgcolor: 'primary.50',
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    border: 2,
+                    borderColor: 'primary.main',
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.dark' }}>
+                    Mode placement: {selectedBuilding}
+                  </Typography>
+                </Paper>
+              )}
+              <Paper
+                elevation={1}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  bgcolor: 'success.50',
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  transition: 'transform 0.2s',
+                  '&:hover': { transform: 'scale(1.05)' },
+                }}
               >
-                <DollarSign className="w-5 h-5 text-green-600" />
-                <span className="font-bold text-green-700">{money.toLocaleString('fr-FR')} €</span>
-              </motion.div>
+                <DollarSign className="w-5 h-5" style={{ color: '#16a34a' }} />
+                <Typography variant="body1" sx={{ fontWeight: 700, color: 'success.dark' }}>
+                  {money.toLocaleString('fr-FR')} €
+                </Typography>
+              </Paper>
 
-              <motion.div
-                className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-xl"
-                whileHover={{ scale: 1.05 }}
+              <Paper
+                elevation={1}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  bgcolor: 'info.50',
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  transition: 'transform 0.2s',
+                  '&:hover': { transform: 'scale(1.05)' },
+                }}
               >
-                <Users className="w-5 h-5 text-blue-600" />
-                <span className="font-bold text-blue-700">{citizens}</span>
-              </motion.div>
+                <Users className="w-5 h-5" style={{ color: '#2563eb' }} />
+                <Typography variant="body1" sx={{ fontWeight: 700, color: 'info.dark' }}>
+                  {citizens}
+                </Typography>
+              </Paper>
 
-              <motion.div
-                className="flex items-center gap-2 bg-pink-50 px-4 py-2 rounded-xl"
-                whileHover={{ scale: 1.05 }}
+              <Paper
+                elevation={1}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  bgcolor: 'error.50',
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  transition: 'transform 0.2s',
+                  '&:hover': { transform: 'scale(1.05)' },
+                }}
               >
-                <Heart className="w-5 h-5 text-pink-600" />
-                <span className="font-bold text-pink-700">{happiness}%</span>
-              </motion.div>
-            </div>
+                <Heart className="w-5 h-5" style={{ color: '#db2777' }} />
+                <Typography variant="body1" sx={{ fontWeight: 700, color: 'error.dark' }}>
+                  {happiness}%
+                </Typography>
+              </Paper>
+            </Box>
 
             {/* Actions */}
-            <div className="flex items-center gap-2">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Button onClick={openShop} variant="secondary" size="sm">
-                <ShoppingCart className="w-4 h-4 mr-2" />
+                <ShoppingCart className="w-4 h-4" style={{ marginRight: '0.5rem' }} />
                 Boutique
               </Button>
               <Button onClick={openTaxes} variant="secondary" size="sm">
-                <Settings className="w-4 h-4 mr-2" />
+                <Settings className="w-4 h-4" style={{ marginRight: '0.5rem' }} />
                 Impôts
               </Button>
               <Button onClick={openPolicies} variant="secondary" size="sm">
-                <Shield className="w-4 h-4 mr-2" />
+                <Shield className="w-4 h-4" style={{ marginRight: '0.5rem' }} />
                 Politiques
               </Button>
               <Button onClick={openZones} variant="secondary" size="sm">
-                <Map className="w-4 h-4 mr-2" />
+                <Map className="w-4 h-4" style={{ marginRight: '0.5rem' }} />
                 Zones
               </Button>
               <Button onClick={handleSave} variant="secondary" size="sm">
-                <Save className="w-4 h-4 mr-2" />
+                <Save className="w-4 h-4" style={{ marginRight: '0.5rem' }} />
                 Sauvegarder
               </Button>
               <Button
@@ -151,16 +222,17 @@ export function HUD() {
               >
                 Menu
               </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+            </Box>
+          </Box>
+        </Box>
+      </Paper>
 
       <Shop />
       <Taxes />
       <Policies />
       <Zones />
       <Admin />
+      <BuildingInfo />
     </>
   )
 }

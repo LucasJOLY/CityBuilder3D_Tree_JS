@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { Typography, Box } from '@mui/material'
 import { Button } from './components/Button'
 import { useUIStore } from '@/stores/ui-store'
 import { useGameStore } from '@/stores/game-store'
 import { useWorldStore } from '@/stores/world-store'
 import { loadSaveSlots, deleteSaveSlot } from '@/utils/save-manager'
+import { Options } from './Options'
 
 export function MainMenu() {
   const setScreen = useUIStore((state) => state.setScreen)
   const reset = useGameStore((state) => state.reset)
   const initializeGrid = useWorldStore((state) => state.initializeGrid)
   const [saveSlots, setSaveSlots] = useState<Array<{ id: string; name: string; timestamp: number }>>([])
+  const [isOptionsOpen, setIsOptionsOpen] = useState(false)
 
   useEffect(() => {
     loadSaveSlots().then((slots) => {
@@ -39,37 +41,63 @@ export function MainMenu() {
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full"
+    <Box
+      sx={{
+        position: 'fixed',
+        inset: 0,
+        background: 'linear-gradient(to bottom right, rgba(246, 116, 27, 0.1), rgba(246, 116, 27, 0.05))',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Box
+        sx={{
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+          boxShadow: 24,
+          p: 4,
+          maxWidth: '28rem',
+          width: '100%',
+          animation: 'fade-in 0.3s ease-out',
+        }}
       >
-        <h1 className="text-4xl font-bold text-center mb-8 text-primary">
+        <Typography variant="h1" sx={{ textAlign: 'center', mb: 4, color: 'primary.main' }}>
           City Builder 3D
-        </h1>
+        </Typography>
 
-        <div className="space-y-4">
-          <Button onClick={handleNewGame} className="w-full" size="lg">
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Button onClick={handleNewGame} fullWidth size="lg">
             Nouvelle partie
           </Button>
 
           {saveSlots.length > 0 && (
-            <div className="border-t pt-4 mt-4">
-              <h2 className="text-lg font-semibold mb-3">Charger une partie</h2>
-              <div className="space-y-2">
+            <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 2, mt: 2 }}>
+              <Typography variant="h4" sx={{ mb: 2 }}>
+                Charger une partie
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {saveSlots.map((slot) => (
-                  <div
+                  <Box
                     key={slot.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      p: 1.5,
+                      bgcolor: 'grey.50',
+                      borderRadius: 2,
+                    }}
                   >
-                    <div>
-                      <p className="font-medium">{slot.name}</p>
-                      <p className="text-sm text-gray-500">
+                    <Box>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                        {slot.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
                         {new Date(slot.timestamp).toLocaleString('fr-FR')}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
                       <Button
                         onClick={() => handleLoadGame(slot.id)}
                         size="sm"
@@ -84,32 +112,38 @@ export function MainMenu() {
                       >
                         Supprimer
                       </Button>
-                    </div>
-                  </div>
+                    </Box>
+                  </Box>
                 ))}
-              </div>
-            </div>
+              </Box>
+            </Box>
           )}
 
-          <div className="border-t pt-4 mt-4">
-            <Button variant="secondary" className="w-full" size="md">
-              Options
-            </Button>
-          </div>
-
-          <div className="text-center text-sm text-gray-500">
+          <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 2, mt: 2 }}>
             <Button
               variant="secondary"
-              className="w-full"
+              fullWidth
+              size="md"
+              onClick={() => setIsOptionsOpen(true)}
+            >
+              Options
+            </Button>
+          </Box>
+
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <Button
+              variant="secondary"
+              fullWidth
               size="sm"
               onClick={() => alert('Crédits à venir')}
             >
               Crédits
             </Button>
-          </div>
-        </div>
-      </motion.div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+      <Options isOpen={isOptionsOpen} onClose={() => setIsOptionsOpen(false)} />
+    </Box>
   )
 }
 

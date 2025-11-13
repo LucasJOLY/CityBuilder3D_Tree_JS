@@ -1,42 +1,67 @@
-import { cn } from '@/utils/cn'
-import { motion } from 'framer-motion'
+import { Button as MuiButton, ButtonProps as MuiButtonProps } from '@mui/material'
+import { styled } from '@mui/material/styles'
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger'
+type ButtonVariant = 'primary' | 'secondary' | 'danger'
+
+interface ButtonProps extends Omit<MuiButtonProps, 'variant' | 'color'> {
+  variant?: ButtonVariant
   size?: 'sm' | 'md' | 'lg'
+  fullWidth?: boolean
 }
+
+const StyledButton = styled(MuiButton)<{ buttonVariant?: ButtonVariant }>(
+  ({ theme, buttonVariant }) => ({
+    borderRadius: theme.shape.borderRadius,
+    fontWeight: 500,
+    textTransform: 'none',
+    boxShadow: theme.shadows[4],
+    transition: 'transform 0.2s, box-shadow 0.2s',
+    '&:hover': {
+      transform: 'scale(1.05)',
+      boxShadow: theme.shadows[8],
+    },
+    '&:active': {
+      transform: 'scale(0.95)',
+    },
+    ...(buttonVariant === 'primary' && {
+      backgroundColor: theme.palette.primary.main,
+      color: theme.palette.primary.contrastText,
+      '&:hover': {
+        backgroundColor: theme.palette.primary.dark,
+      },
+    }),
+    ...(buttonVariant === 'secondary' && {
+      backgroundColor: theme.palette.grey[200],
+      color: theme.palette.text.primary,
+      '&:hover': {
+        backgroundColor: theme.palette.grey[300],
+      },
+    }),
+    ...(buttonVariant === 'danger' && {
+      backgroundColor: theme.palette.error.main,
+      color: theme.palette.error.contrastText,
+      '&:hover': {
+        backgroundColor: theme.palette.error.dark,
+      },
+    }),
+  })
+)
 
 export function Button({
   children,
-  className,
   variant = 'primary',
   size = 'md',
   ...props
 }: ButtonProps) {
-  const baseStyles =
-    'rounded-2xl font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
-
-  const variants = {
-    primary: 'bg-primary text-white hover:bg-primary-600 shadow-lg',
-    secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 shadow',
-    danger: 'bg-red-500 text-white hover:bg-red-600 shadow-lg',
-  }
-
-  const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg',
-  }
+  const muiSize = size === 'sm' ? 'small' : size === 'lg' ? 'large' : 'medium'
 
   return (
-    <motion.button
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      className={cn(baseStyles, variants[variant], sizes[size], className)}
+    <StyledButton
+      buttonVariant={variant}
+      size={muiSize}
       {...props}
     >
       {children}
-    </motion.button>
+    </StyledButton>
   )
 }
-

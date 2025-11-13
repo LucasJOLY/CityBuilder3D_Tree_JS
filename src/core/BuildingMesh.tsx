@@ -1,8 +1,10 @@
-import { useMemo } from 'react'
-import { Box } from '@react-three/drei'
+import { useMemo, useEffect, useState } from 'react'
+import { useThree } from '@react-three/fiber'
+import * as THREE from 'three'
 import type { BuildingType, TileOrientation } from '@/types/domain'
 import { loadBuildingsConfig } from '@/utils/config-loader'
-import { useEffect, useState } from 'react'
+import { createBuildingShape } from './building-factory'
+import { useWorldStore } from '@/stores/world-store'
 
 interface BuildingMeshProps {
   x: number
@@ -11,19 +13,12 @@ interface BuildingMeshProps {
   orientation: TileOrientation
 }
 
-const buildingColors: Record<BuildingType, string> = {
-  road: '#444444',
-  house: '#8B4513',
-  hospital: '#FFFFFF',
-  school: '#FFD700',
-  police: '#0000FF',
-  fire: '#FF0000',
-  park: '#00FF00',
-  monument: '#FFD700',
-}
-
 export function BuildingMesh({ x, y, type, orientation }: BuildingMeshProps) {
   const [size, setSize] = useState<[number, number]>([1, 1])
+  const selectedPlacedBuilding = useWorldStore(state => state.selectedPlacedBuilding)
+  const setSelectedPlacedBuilding = useWorldStore(state => state.setSelectedPlacedBuilding)
+  const selectedBuilding = useWorldStore(state => state.selectedBuilding)
+  const isMovingBuilding = useWorldStore(state => state.isMovingBuilding)
 
   useEffect(() => {
     loadBuildingsConfig().then((configs) => {
@@ -37,22 +32,56 @@ export function BuildingMesh({ x, y, type, orientation }: BuildingMeshProps) {
   const position = useMemo(() => {
     const gridSize = 50
     const offsetX = x - gridSize / 2 + size[0] / 2
+    const height = type === 'road' ? 0.05 : Math.max(size[0], size[1]) * 0.25
     const offsetZ = y - gridSize / 2 + size[1] / 2
-    return [offsetX, size[0] / 2, offsetZ] as [number, number, number]
-  }, [x, y, size])
+    return [offsetX, height, offsetZ] as [number, number, number]
+  }, [x, y, size, type])
 
-  const rotation = useMemo(() => {
-    return (orientation * Math.PI) / 2
-  }, [orientation])
+  const isSelected = useMemo(() => {
+    return (
+      selectedPlacedBuilding?.x === x &&
+      selectedPlacedBuilding?.y === y
+    )
+  }, [selectedPlacedBuilding, x, y])
+
+  const handleClick = (e: any) => {
+    e.stopPropagation()
+    // Ne pas sélectionner si on est en train de placer un bâtiment
+    if (selectedBuilding || isMovingBuilding) return
+    setSelectedPlacedBuilding({ x, y })
+  }
+
+  const handlePointerDown = (e: any) => {
+    e.stopPropagation()
+    // Empêcher GridPlane de traiter le clic si on clique sur un bâtiment
+    if (!selectedBuilding && !isMovingBuilding) {
+      handleClick(e)
+    }
+  }
 
   return (
-    <Box
-      args={[size[0], size[0] * 0.5, size[1]]}
-      position={position}
-      rotation={[0, rotation, 0]}
+    <group 
+      onClick={handleClick} 
+      onPointerDown={handlePointerDown}
+      onPointerOver={(e) => {
+        if (!selectedBuilding && !isMovingBuilding) {
+          e.stopPropagation()
+          document.body.style.cursor = 'pointer'
+        }
+      }} 
+      onPointerOut={() => {
+        document.body.style.cursor = 'default'
+      }}
     >
-      <meshStandardMaterial color={buildingColors[type]} />
-    </Box>
+      {createBuildingShape({
+        type,
+        size,
+        orientation,
+        position,
+        key: `${x}-${y}`,
+        isSelected,
+      })}
+    </group>
   )
 }
 

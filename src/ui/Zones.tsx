@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Box, Typography, Paper, Grid } from '@mui/material'
 import { Modal } from './components/Modal'
 import { Button } from './components/Button'
 import { useUIStore } from '@/stores/ui-store'
@@ -67,51 +68,72 @@ export function Zones() {
 
   return (
     <Modal isOpen={isOpen} onClose={closeZones} title="Achat de zones">
-      <div className="space-y-4">
-        <div className="bg-gray-50 rounded-xl p-4">
-          <h3 className="font-semibold mb-2">Zones disponibles</h3>
-          <p className="text-sm text-gray-600">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50' }}>
+          <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+            Zones disponibles
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
             Débloquez de nouvelles zones pour étendre votre ville.
-          </p>
-        </div>
+          </Typography>
+        </Paper>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
+            gap: 2,
+            maxHeight: '24rem',
+            overflowY: 'auto',
+          }}
+        >
           {availableZones.map((zone, index) => (
-            <div
+            <Paper
               key={index}
-              className="p-4 border-2 border-gray-200 rounded-xl hover:border-primary transition-colors"
+              elevation={1}
+              sx={{
+                p: 2,
+                border: 2,
+                borderColor: 'grey.300',
+                '&:hover': {
+                  borderColor: 'primary.main',
+                },
+                transition: 'border-color 0.2s',
+              }}
             >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="font-semibold text-gray-900">
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                <Box>
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
                     Zone {zone.width}x{zone.height}
-                  </p>
-                  <p className="text-sm text-gray-600">
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
                     Position: ({zone.x}, {zone.y})
-                  </p>
-                </div>
-                <span className="font-bold text-primary">
+                  </Typography>
+                </Box>
+                <Typography variant="body1" sx={{ fontWeight: 700, color: 'primary.main' }}>
                   {zone.price?.toLocaleString('fr-FR')} €
-                </span>
-              </div>
+                </Typography>
+              </Box>
               <Button
                 onClick={() => handleBuyZone(zone)}
                 disabled={money < (zone.price || 0)}
                 size="sm"
-                className="w-full"
+                fullWidth
               >
                 Acheter
               </Button>
-            </div>
+            </Paper>
           ))}
-        </div>
+        </Box>
 
         {availableZones.length === 0 && (
-          <div className="text-center text-gray-500 py-8">
-            Toutes les zones sont débloquées !
-          </div>
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body1" color="text.secondary">
+              Toutes les zones sont débloquées !
+            </Typography>
+          </Box>
         )}
-      </div>
+      </Box>
     </Modal>
   )
 }

@@ -1,7 +1,6 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { Modal as MuiModal, Box, Typography, IconButton } from '@mui/material'
 import { X } from 'lucide-react'
 import { useEffect } from 'react'
-import { cn } from '@/utils/cn'
 
 interface ModalProps {
   isOpen: boolean
@@ -21,52 +20,77 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'hidden'
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'unset'
     }
   }, [isOpen, onClose])
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-40"
-            onClick={onClose}
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className={cn(
-              'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-50 max-w-2xl w-full max-h-[90vh] overflow-y-auto',
-              className
-            )}
+    <MuiModal
+      open={isOpen}
+      onClose={onClose}
+      disableEnforceFocus
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Box
+        className={className}
+        sx={{
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+          boxShadow: 24,
+          display: 'flex',
+          flexDirection: 'column',
+          maxWidth: '42rem',
+          width: '90vw',
+          maxHeight: '90vh',
+          outline: 'none',
+        }}
+      >
+        {title && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              p: 3,
+              borderBottom: 1,
+              borderColor: 'divider',
+              flexShrink: 0,
+            }}
           >
-            {title && (
-              <div className="flex items-center justify-between p-6 border-b">
-                <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-                <button
-                  onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  aria-label="Fermer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            )}
-            <div className="p-6">{children}</div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+            <Typography variant="h2" component="h2">
+              {title}
+            </Typography>
+            <IconButton
+              onClick={onClose}
+              aria-label="Fermer"
+              sx={{
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                },
+              }}
+            >
+              <X className="w-5 h-5" />
+            </IconButton>
+          </Box>
+        )}
+        <Box
+          sx={{
+            overflowY: 'auto',
+            flex: 1,
+            minHeight: 0,
+            overscrollBehavior: 'contain',
+          }}
+        >
+          <Box sx={{ p: 3 }}>{children}</Box>
+        </Box>
+      </Box>
+    </MuiModal>
   )
 }
-

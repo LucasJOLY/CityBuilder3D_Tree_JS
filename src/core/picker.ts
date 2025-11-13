@@ -20,8 +20,16 @@ export class GridPicker {
   }
 
   updateMouse(event: MouseEvent, width: number, height: number): void {
-    this.mouse.x = (event.clientX / width) * 2 - 1
-    this.mouse.y = -(event.clientY / height) * 2 + 1
+    const rect = (event.target as HTMLElement)?.getBoundingClientRect()
+    if (rect) {
+      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+      const y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+      this.mouse.x = x
+      this.mouse.y = y
+    } else {
+      this.mouse.x = (event.clientX / width) * 2 - 1
+      this.mouse.y = -(event.clientY / height) * 2 + 1
+    }
   }
 
   pick(
@@ -31,9 +39,11 @@ export class GridPicker {
     this.raycaster.setFromCamera(this.mouse, camera)
 
     const intersectionPoint = new THREE.Vector3()
-    this.raycaster.ray.intersectPlane(this.plane, intersectionPoint)
+    const hasIntersection = this.raycaster.ray.intersectPlane(this.plane, intersectionPoint)
 
-    if (intersectionPoint) {
+    if (hasIntersection !== null && intersectionPoint) {
+      // Convert world position to grid coordinates
+      // The plane is at y=0, centered at origin
       const x = Math.floor(intersectionPoint.x + gridSize / 2)
       const y = Math.floor(intersectionPoint.z + gridSize / 2)
 

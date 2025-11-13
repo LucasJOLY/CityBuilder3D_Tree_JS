@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Box, Typography, Slider, Paper } from '@mui/material'
 import { Modal } from './components/Modal'
 import { Button } from './components/Button'
 import { useUIStore } from '@/stores/ui-store'
@@ -57,65 +58,90 @@ export function Taxes() {
 
   return (
     <Modal isOpen={isOpen} onClose={closeTaxes} title="Gestion des impôts">
-      <div className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Box>
+          <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
             Taux d'imposition: {currentTax}%
-          </label>
-          <input
-            type="range"
+          </Typography>
+          <Slider
+            value={currentTax}
+            onChange={(_, value) => handleTaxChange(value as number)}
             min={taxMin}
             max={taxMax}
-            value={currentTax}
-            onChange={(e) => handleTaxChange(Number(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+            step={1}
+            marks={[
+              { value: taxMin, label: `${taxMin}%` },
+              { value: taxMax, label: `${taxMax}%` },
+            ]}
+            sx={{
+              '& .MuiSlider-thumb': {
+                '&:hover': {
+                  boxShadow: '0 0 0 8px rgba(246, 116, 27, 0.16)',
+                },
+              },
+            }}
           />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>{taxMin}%</span>
-            <span>{taxMax}%</span>
-          </div>
-        </div>
+        </Box>
 
         {projectedIncome && (
-          <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-            <h3 className="font-semibold text-gray-900">Revenus mensuels estimés</h3>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Revenus:</span>
-              <span className="font-semibold text-green-600">
-                +{projectedIncome.revenue.toLocaleString('fr-FR')} €
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Dépenses:</span>
-              <span className="font-semibold text-red-600">
-                -{projectedIncome.expenses.toLocaleString('fr-FR')} €
-              </span>
-            </div>
-            <div className="flex justify-between border-t pt-2">
-              <span className="text-gray-900 font-semibold">Net:</span>
-              <span
-                className={`font-bold ${
-                  projectedIncome.net >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}
+          <Paper elevation={1} sx={{ p: 2, bgcolor: 'grey.50' }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+              Revenus mensuels estimés
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Revenus:
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main' }}>
+                  +{projectedIncome.revenue.toLocaleString('fr-FR')} €
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Dépenses:
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main' }}>
+                  -{projectedIncome.expenses.toLocaleString('fr-FR')} €
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  borderTop: 1,
+                  borderColor: 'divider',
+                  pt: 1,
+                  mt: 1,
+                }}
               >
-                {projectedIncome.net >= 0 ? '+' : ''}
-                {projectedIncome.net.toLocaleString('fr-FR')} €
-              </span>
-            </div>
-          </div>
+                <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                  Net:
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    fontWeight: 700,
+                    color: projectedIncome.net >= 0 ? 'success.main' : 'error.main',
+                  }}
+                >
+                  {projectedIncome.net >= 0 ? '+' : ''}
+                  {projectedIncome.net.toLocaleString('fr-FR')} €
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
         )}
 
-        <div className="text-sm text-gray-600">
-          <p>
-            Les impôts influencent directement vos revenus mensuels. Un taux élevé génère plus de
-            revenus mais peut réduire le bonheur des citoyens.
-          </p>
-        </div>
+        <Typography variant="body2" color="text.secondary">
+          Les impôts influencent directement vos revenus mensuels. Un taux élevé génère plus de
+          revenus mais peut réduire le bonheur des citoyens.
+        </Typography>
 
-        <Button onClick={closeTaxes} className="w-full">
+        <Button onClick={closeTaxes} fullWidth>
           Fermer
         </Button>
-      </div>
+      </Box>
     </Modal>
   )
 }
