@@ -1,5 +1,4 @@
-import type { SaveSlot, GameState, GridCell } from '@/types/domain'
-import { serializeGameState, deserializeGameState } from './serialize'
+import type { SaveSlot } from '@/types/domain'
 
 const SAVE_PREFIX = 'citybuilder_save_'
 
@@ -20,10 +19,13 @@ export async function saveGame(slotId: string, name: string): Promise<void> {
       happiness: gameState.happiness,
       currentTax: gameState.currentTax,
       activePolicies: [...gameState.activePolicies],
-      unlockedZones: [...gameState.unlockedZones],
       seed: gameState.seed,
+      activeLoans: gameState.activeLoans ? [...gameState.activeLoans] : [],
+      archivedLoans: gameState.archivedLoans ? [...gameState.archivedLoans] : [],
+      loanCountsByType: gameState.loanCountsByType ? { ...gameState.loanCountsByType } : {},
+      gameDate: gameState.gameDate || new Date(2020, 0, 1).getTime(),
     },
-    grid: grid.map((row) => row.map((cell) => ({ ...cell }))),
+    grid: grid.map(row => row.map(cell => ({ ...cell }))),
   }
 
   localStorage.setItem(SAVE_PREFIX + slotId, JSON.stringify(saveData))
@@ -74,4 +76,3 @@ export async function loadSaveSlots(): Promise<
 export async function deleteSaveSlot(slotId: string): Promise<void> {
   localStorage.removeItem(SAVE_PREFIX + slotId)
 }
-

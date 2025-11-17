@@ -1,0 +1,37 @@
+[
+  {
+    "id": "loan_100",
+    "amount": 100,
+    "durationMonths": 2,
+    "interestRate": 5,
+    "label": "Prêt de 100€"
+  },
+  {
+    "id": "loan_500",
+    "amount": 500,
+    "durationMonths": 5,
+    "interestRate": 5,
+    "label": "Prêt de 500€"
+  },
+  {
+    "id": "loan_1000",
+    "amount": 1000,
+    "durationMonths": 8,
+    "interestRate": 10,
+    "label": "Prêt de 1000€"
+  },
+  {
+    "id": "loan_5000",
+    "amount": 5000,
+    "durationMonths": 10,
+    "interestRate": 15,
+    "label": "Prêt de 5000€"
+  },
+  {
+    "id": "loan_10000",
+    "amount": 10000,
+    "durationMonths": 15,
+    "interestRate": 20,
+    "label": "Prêt de 10000€"
+  }
+]

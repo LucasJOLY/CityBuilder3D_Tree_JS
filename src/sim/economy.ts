@@ -4,6 +4,7 @@ import { loadEconomyConfig, loadPoliciesConfig } from '@/utils/config-loader'
 export interface MonthlyIncome {
   revenue: number
   expenses: number
+  monthlyCosts: number // Coûts mensuels (20% des revenus si revenue > 0, sinon 0)
   net: number
 }
 
@@ -53,10 +54,21 @@ export async function calculateMonthlyIncome(
     }
   }
 
+  // Calculer le net avant les coûts mensuels
+  let net = revenue - expenses
+
+  // Coûts mensuels : si on a des revenus, on perd 20% des revenus
+  let monthlyCosts = 0
+  if (revenue > 0) {
+    monthlyCosts = revenue * 0.2 // 20% des revenus
+    net -= monthlyCosts
+  }
+
   return {
     revenue: Math.round(revenue),
     expenses: Math.round(expenses),
-    net: Math.round(revenue - expenses),
+    monthlyCosts: Math.round(monthlyCosts),
+    net: Math.round(net),
   }
 }
 

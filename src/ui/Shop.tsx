@@ -6,6 +6,7 @@ import { useUIStore } from '@/stores/ui-store'
 import { useWorldStore } from '@/stores/world-store'
 import { useGameStore } from '@/stores/game-store'
 import { loadBuildingsConfig } from '@/utils/config-loader'
+import { buildingLabels } from '@/utils/building-labels'
 import type { BuildingType, BuildingConfig } from '@/types/domain'
 import {
   FaRoad,
@@ -17,28 +18,17 @@ import {
   FaTree,
   FaMonument,
   FaBuilding,
+  FaChurch,
+  FaBeer,
+  FaLock,
 } from 'react-icons/fa'
 
 const buildingCategories: Record<string, BuildingType[]> = {
   Routes: ['road', 'roadTurn'],
-  Résidentiel: ['house', 'apartment'],
-  Services: ['hospital', 'school', 'police', 'fire'],
-  Loisirs: ['park', 'parkLarge'],
-  Monuments: ['monument'],
-}
-
-const buildingLabels: Record<BuildingType, string> = {
-  road: 'Route',
-  roadTurn: 'Virage',
-  house: 'Maison',
-  apartment: 'Immeuble HLM',
-  hospital: 'Hôpital',
-  school: 'École',
-  police: 'Commissariat',
-  fire: 'Caserne de pompiers',
-  park: 'Parc',
-  parkLarge: 'Grand parc',
-  monument: 'Monument',
+  Résidentiel: ['house', 'apartment', 'skycraper'],
+  Services: ['hospital', 'school', 'police', 'fire', 'prison'],
+  Loisirs: ['park', 'parkLarge', 'bar'],
+  Monuments: ['monument', 'church'],
 }
 
 const buildingIcons: Record<BuildingType, React.ReactNode> = {
@@ -53,14 +43,18 @@ const buildingIcons: Record<BuildingType, React.ReactNode> = {
   park: <FaTree className="w-8 h-8" />,
   parkLarge: <FaTree className="w-8 h-8" />,
   monument: <FaMonument className="w-8 h-8" />,
+  skycraper: <FaBuilding className="w-8 h-8" />,
+  prison: <FaLock className="w-8 h-8" />,
+  church: <FaChurch className="w-8 h-8" />,
+  bar: <FaBeer className="w-8 h-8" />,
 }
 
 export function Shop() {
-  const isOpen = useUIStore((state) => state.isShopOpen)
-  const closeShop = useUIStore((state) => state.closeShop)
-  const setSelectedBuilding = useWorldStore((state) => state.setSelectedBuilding)
-  const selectedBuilding = useWorldStore((state) => state.selectedBuilding)
-  const money = useGameStore((state) => state.money)
+  const isOpen = useUIStore(state => state.isShopOpen)
+  const closeShop = useUIStore(state => state.closeShop)
+  const setSelectedBuilding = useWorldStore(state => state.setSelectedBuilding)
+  const selectedBuilding = useWorldStore(state => state.selectedBuilding)
+  const money = useGameStore(state => state.money)
   const [buildings, setBuildings] = useState<Record<string, BuildingConfig>>({})
   const [selectedFilters, setSelectedFilters] = useState<BuildingType[]>([])
 
@@ -70,7 +64,7 @@ export function Shop() {
 
   // Récupérer tous les types de bâtiments disponibles
   const allBuildingTypes = Object.values(buildingCategories).flat()
-  
+
   // Filtrer les catégories selon les filtres sélectionnés
   const filteredCategories = Object.entries(buildingCategories).filter(([category, types]) => {
     if (selectedFilters.length === 0) return true
@@ -78,10 +72,8 @@ export function Shop() {
   })
 
   const handleFilterToggle = (type: BuildingType) => {
-    setSelectedFilters(prev => 
-      prev.includes(type) 
-        ? prev.filter(t => t !== type)
-        : [...prev, type]
+    setSelectedFilters(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
     )
   }
 
@@ -104,11 +96,11 @@ export function Shop() {
             Filtres
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {allBuildingTypes.map((type) => {
+            {allBuildingTypes.map(type => {
               const config = buildings[type]
               if (!config) return null
               const isFiltered = selectedFilters.includes(type)
-              
+
               return (
                 <Chip
                   key={type}
@@ -139,10 +131,11 @@ export function Shop() {
         {/* Liste des bâtiments */}
         {filteredCategories.map(([category, types]) => {
           // Filtrer les types selon les filtres sélectionnés
-          const filteredTypes = selectedFilters.length === 0 
-            ? types 
-            : types.filter(type => selectedFilters.includes(type))
-          
+          const filteredTypes =
+            selectedFilters.length === 0
+              ? types
+              : types.filter(type => selectedFilters.includes(type))
+
           if (filteredTypes.length === 0) return null
 
           return (
@@ -151,7 +144,7 @@ export function Shop() {
                 {category}
               </Typography>
               <Grid container spacing={2}>
-                {filteredTypes.map((type) => {
+                {filteredTypes.map(type => {
                   const config = buildings[type]
                   if (!config) return null
 
@@ -179,7 +172,7 @@ export function Shop() {
                           bgcolor: isSelected ? 'primary.50' : 'background.paper',
                           opacity: canAfford ? 1 : 0.5,
                         }}
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation()
                           if (canAfford) {
                             handleSelectBuilding(type)
@@ -195,7 +188,16 @@ export function Shop() {
                         <Typography variant="body2" sx={{ mb: 1, fontWeight: 700, flexShrink: 0 }}>
                           {config.cost.toLocaleString('fr-FR')} €
                         </Typography>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flexGrow: 1, justifyContent: 'flex-start', mt: 'auto' }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 0.5,
+                            flexGrow: 1,
+                            justifyContent: 'flex-start',
+                            mt: 'auto',
+                          }}
+                        >
                           {config.citizens > 0 && (
                             <Typography variant="caption" color="text.secondary">
                               Habitants: {config.citizens}
@@ -207,11 +209,12 @@ export function Shop() {
                             </Typography>
                           )}
                           {config.happiness !== 0 && (
-                            <Typography 
-                              variant="caption" 
+                            <Typography
+                              variant="caption"
                               color={config.happiness > 0 ? 'success.main' : 'error.main'}
                             >
-                              Bonheur: {config.happiness > 0 ? '+' : ''}{config.happiness}%
+                              Bonheur: {config.happiness > 0 ? '+' : ''}
+                              {config.happiness}%
                             </Typography>
                           )}
                         </Box>
@@ -239,7 +242,18 @@ export function Shop() {
               Mode placement actif: <strong>{buildingLabels[selectedBuilding]}</strong>
             </Typography>
             <Typography variant="caption" sx={{ color: 'primary.dark', mt: 0.5, display: 'block' }}>
-              Cliquez sur la grille pour placer. Appuyez sur <kbd style={{ padding: '2px 4px', background: 'white', borderRadius: '4px', fontSize: '0.75rem' }}>R</kbd> pour tourner.
+              Cliquez sur la grille pour placer. Appuyez sur{' '}
+              <kbd
+                style={{
+                  padding: '2px 4px',
+                  background: 'white',
+                  borderRadius: '4px',
+                  fontSize: '0.75rem',
+                }}
+              >
+                R
+              </kbd>{' '}
+              pour tourner.
             </Typography>
           </Paper>
         )}
@@ -247,4 +261,3 @@ export function Shop() {
     </Modal>
   )
 }
-

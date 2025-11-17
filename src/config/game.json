@@ -1,20 +1,7 @@
 {
   "gridSize": 50,
-  "startMoney": 10000,
+  "startMoney": 500,
   "startCitizens": 0,
-  "adminCode": "ADMIN123",
-  "zonePrices": {
-    "small": 500,
-    "medium": 1000,
-    "large": 2000
-  },
-  "unlockedZones": [
-    {
-      "x": 0,
-      "y": 0,
-      "width": 20,
-      "height": 20
-    }
-  ]
+  "adminCode": "ADMIN123"
 }
 

@@ -4,6 +4,7 @@ import { useThree } from '@react-three/fiber'
 import { useSnackbar } from 'notistack'
 import { useWorldStore } from '@/stores/world-store'
 import { useGameStore } from '@/stores/game-store'
+import { useUIStore } from '@/stores/ui-store'
 import { GridPicker } from './picker'
 import { loadGameConfig, loadBuildingsConfig } from '@/utils/config-loader'
 
@@ -25,6 +26,7 @@ export function GridPlane() {
   const setSelectedPlacedBuilding = useWorldStore(state => state.setSelectedPlacedBuilding)
   const money = useGameStore(state => state.money)
   const addMoney = useGameStore(state => state.addMoney)
+  const setGameOver = useUIStore(state => state.setGameOver)
 
   useEffect(() => {
     loadGameConfig().then(config => {
@@ -33,8 +35,9 @@ export function GridPlane() {
   }, [])
 
   // Gérer la touche Échap pour annuler placement/déplacement
+  // Gérer la touche Espace pour désélectionner le bâtiment (surtout pour les routes)
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         // Annuler le placement
         if (selectedBuilding) {
@@ -54,10 +57,21 @@ export function GridPlane() {
           })
         }
       }
+      // Espace pour désélectionner le bâtiment (surtout pour les routes)
+      if (e.key === ' ') {
+        e.preventDefault()
+        if (selectedBuilding) {
+          setSelectedBuilding(null)
+          enqueueSnackbar('Placement terminé', {
+            variant: 'info',
+            autoHideDuration: 2000,
+          })
+        }
+      }
     }
 
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [
     selectedBuilding,
     isMovingBuilding,
@@ -122,8 +136,8 @@ export function GridPlane() {
       if (intersects.length > 0) {
         const point = intersects[0]?.point
         const gridSize = grid.length
-        const x = Math.floor(point?.x ?? 0 + gridSize / 2)
-        const y = Math.floor(point?.z ?? 0 + gridSize / 2)
+        const x = Math.floor((point?.x ?? 0) + gridSize / 2)
+        const y = Math.floor((point?.z ?? 0) + gridSize / 2)
 
         if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
           setHoveredCell({ x, y })
@@ -135,97 +149,20 @@ export function GridPlane() {
       }
     }
 
-    const handleClick = async (event: MouseEvent) => {
-      console.log('=== CLICK EVENT DETECTED ===', {
-        target: event.target,
-        selectedBuilding,
-        hasMesh: !!meshRef.current,
-      })
-
-      // Empêcher le placement si on clique sur un élément UI
-      const target = event.target as HTMLElement
-      if (
-        target.closest('.MuiModal-root') ||
-        target.closest('.MuiBackdrop-root') ||
-        target.closest('[role="presentation"]')
-      ) {
-        console.log('Click blocked by UI element')
-        return
-      }
-
-      if (!selectedBuilding) {
-        console.log('No building selected')
-        return
-      }
-
-      if (!meshRef.current) {
-        console.log('Mesh ref not available')
-        return
-      }
-
-      const rect = canvas.getBoundingClientRect()
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
-
-      console.log('Mouse coordinates:', { x: mouse.x, y: mouse.y, rect })
-
-      raycaster.setFromCamera(mouse, camera)
-      const intersects = raycaster.intersectObject(meshRef.current)
-
-      console.log(
-        'Click detected, intersects:',
-        intersects.length,
-        'Selected building:',
-        selectedBuilding
-      )
-
-      if (intersects.length > 0) {
-        const point = intersects[0]?.point
-        const gridSize = grid.length
-        const x = Math.floor(point?.x ?? 0 + gridSize / 2)
-        const y = Math.floor(point?.z ?? 0 + gridSize / 2)
-
-        console.log('Intersection point:', point, 'Grid cell:', { x, y })
-
-        if (x >= 0 && x < gridSize && y >= 0 && y < gridSize) {
-          const buildings = await loadBuildingsConfig()
-          const building = buildings[selectedBuilding]
-          if (!building) {
-            console.log('Building config not found:', selectedBuilding)
-            return
-          }
-
-          if (money < building.cost) {
-            console.log('Not enough money:', money, 'needed:', building.cost)
-            return
-          }
-
-          const placed = await placeBuilding(x, y, selectedBuilding, placementRotation)
-          console.log('Placement result:', placed ?? false, 'at', { x, y })
-          if (placed ?? false) {
-            addMoney(-building.cost)
-            console.log('Building placed successfully!')
-          } else {
-            console.log('Placement failed - cell might be occupied')
-          }
-        } else {
-          console.log('Cell out of bounds:', { x, y }, 'Grid size:', gridSize)
-        }
-      } else {
-        console.log('No intersection with plane')
-      }
-    }
+    // handleClick désactivé - on utilise onPointerDown à la place qui est plus précis
+    // const handleClick = async (event: MouseEvent) => { ... }
 
     // Use capture phase to catch events before MapControls
+    // Note: handleClick désactivé car onPointerDown gère mieux les événements
     canvas.addEventListener('mousemove', handleMouseMove, { passive: true })
-    canvas.addEventListener('click', handleClick, { capture: true })
+    // canvas.addEventListener('click', handleClick, { capture: true })
 
     console.log('Event listeners attached')
 
     return () => {
       console.log('Cleaning up event listeners')
       canvas.removeEventListener('mousemove', handleMouseMove)
-      canvas.removeEventListener('click', handleClick, { capture: true })
+      // canvas.removeEventListener('click', handleClick, { capture: true })
     }
   }, [
     gl,
@@ -346,8 +283,11 @@ export function GridPlane() {
             break
           }
 
-          // Vérifier si la cellule est occupée
-          if (currentGrid[ny]?.[nx]?.buildingType !== null) {
+          // Vérifier si la cellule est occupée (bâtiment ou objet décoratif)
+          if (
+            currentGrid[ny]?.[nx]?.buildingType !== null ||
+            currentGrid[ny]?.[nx]?.decorativeObject !== null
+          ) {
             hasConflict = true
             break
           }
@@ -368,14 +308,26 @@ export function GridPlane() {
       console.log('Placement result:', placed, 'at', { x, y })
       if (placed) {
         addMoney(-building.cost)
+
+        // Vérifier si le joueur a perdu (dette de -1000€)
+        const newMoney = useGameStore.getState().money
+        if (newMoney <= -1000) {
+          setGameOver(true)
+        }
+
         console.log('Building placed successfully!')
         enqueueSnackbar('Le bâtiment a été placé avec succès', {
           variant: 'success',
           autoHideDuration: 2000,
         })
-        // Désélectionner le bâtiment après placement réussi
-        const { setSelectedBuilding } = useWorldStore.getState()
-        setSelectedBuilding(null)
+        // Ne pas désélectionner le bâtiment après placement si c'est une route
+        // L'utilisateur peut continuer à placer des routes jusqu'à appuyer sur Espace
+        const isRoad = selectedBuilding === 'road' || selectedBuilding === 'roadTurn'
+        if (!isRoad) {
+          // Désélectionner le bâtiment après placement réussi (sauf pour les routes)
+          const { setSelectedBuilding } = useWorldStore.getState()
+          setSelectedBuilding(null)
+        }
       } else {
         console.log('Placement failed - unexpected error')
         enqueueSnackbar('Impossible de placer le bâtiment', {
@@ -391,13 +343,12 @@ export function GridPlane() {
   return (
     <mesh
       ref={meshRef}
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, 0, 0]}
+      position={[0, -500, 0]}
       onPointerMove={handlePointerMove}
       onPointerDown={handlePointerDown}
     >
-      <planeGeometry args={[gridSize, gridSize]} />
-      <meshStandardMaterial color="#2a2a2a" transparent opacity={0.3} />
+      <boxGeometry args={[gridSize, 1000, gridSize]} />
+      <meshStandardMaterial color="#a8d5ba" flatShading={true} roughness={1} metalness={0} />
     </mesh>
   )
 }

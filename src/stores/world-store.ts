@@ -1,7 +1,14 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
-import type { GridCell, BuildingType, TileOrientation } from '@/types/domain'
-import { loadGameConfig, loadBuildingsConfig } from '@/utils/config-loader'
+import type { GridCell, BuildingType, TileOrientation, DecorativeObjectType } from '@/types/domain'
+import {
+  loadGameConfig,
+  loadBuildingsConfig,
+  loadDecorativeObjectsConfig,
+} from '@/utils/config-loader'
+import { useGameStore } from './game-store'
+import { useUIStore } from './ui-store'
+import { seededRandom } from '@/utils/math'
 
 interface WorldStore {
   grid: GridCell[][]
@@ -20,6 +27,7 @@ interface WorldStore {
     orientation: TileOrientation
   ) => Promise<boolean>
   removeBuilding: (x: number, y: number) => Promise<void>
+  removeDecorativeObject: (x: number, y: number) => Promise<boolean>
   setSelectedBuilding: (type: BuildingType | null) => void
   setSelectedPlacedBuilding: (position: { x: number; y: number } | null) => void
   setIsMovingBuilding: (isMoving: boolean) => void
@@ -38,12 +46,81 @@ function createEmptyGrid(size: number): GridCell[][] {
         x,
         y,
         buildingType: null,
+        decorativeObject: null,
         orientation: 0,
       }
     }
     grid[y] = row
   }
   return grid
+}
+
+// Fonction pour placer des objets décoratifs initiaux de manière aléatoire mais déterministe (basée sur le seed)
+function placeInitialDecorativeObjects(grid: GridCell[][]): void {
+  const gridSize = grid.length
+  if (gridSize === 0) return
+
+  // Récupérer le seed du jeu pour rendre le placement déterministe
+  const seed = useGameStore.getState().seed
+  const random = seededRandom(seed)
+
+  // Créer un Set pour éviter les doublons de positions
+  const occupiedPositions = new Set<string>()
+
+  // Fonction pour obtenir une position aléatoire libre
+  // Réduire la zone de placement de 10 cases sur chaque bord pour éviter que les objets soient trop près des bords
+  const margin = 3
+  const minX = margin
+  const minY = margin
+  const maxX = gridSize - margin
+  const maxY = gridSize - margin
+  const availableWidth = maxX - minX
+  const availableHeight = maxY - minY
+
+  const getRandomPosition = (): { x: number; y: number } | null => {
+    let attempts = 0
+    const maxAttempts = availableWidth * availableHeight // Limite pour éviter une boucle infinie
+
+    while (attempts < maxAttempts) {
+      const x = Math.floor(random() * availableWidth) + minX
+      const y = Math.floor(random() * availableHeight) + minY
+      const key = `${x}-${y}`
+
+      if (!occupiedPositions.has(key) && grid[y]?.[x]) {
+        occupiedPositions.add(key)
+        return { x, y }
+      }
+      attempts++
+    }
+
+    return null // Aucune position libre trouvée
+  }
+
+  // Récupérer les valeurs par défaut depuis le store UI
+  const treeCount = useUIStore.getState().defaultTreeCount
+  const rockCount = useUIStore.getState().defaultRockCount
+
+  // Placer les arbres
+  for (let i = 0; i < treeCount; i++) {
+    const position = getRandomPosition()
+    if (position) {
+      const cell = grid[position.y]?.[position.x]
+      if (cell) {
+        cell.decorativeObject = 'tree'
+      }
+    }
+  }
+
+  // Placer les rochers
+  for (let i = 0; i < rockCount; i++) {
+    const position = getRandomPosition()
+    if (position) {
+      const cell = grid[position.y]?.[position.x]
+      if (cell) {
+        cell.decorativeObject = 'rock'
+      }
+    }
+  }
 }
 
 export const useWorldStore = create<WorldStore>()(
@@ -57,8 +134,10 @@ export const useWorldStore = create<WorldStore>()(
 
     initializeGrid: async () => {
       const gameConfig = await loadGameConfig()
+      const newGrid = createEmptyGrid(gameConfig.gridSize)
+      placeInitialDecorativeObjects(newGrid)
       set(state => {
-        state.grid = createEmptyGrid(gameConfig.gridSize)
+        state.grid = newGrid
       })
     },
 
@@ -86,8 +165,8 @@ export const useWorldStore = create<WorldStore>()(
             return false
           }
 
-          // Vérifier si la cellule est occupée
-          if (grid[ny]?.[nx]?.buildingType !== null) {
+          // Vérifier si la cellule est occupée (bâtiment ou objet décoratif)
+          if (grid[ny]?.[nx]?.buildingType !== null || grid[ny]?.[nx]?.decorativeObject !== null) {
             return false
           }
 
@@ -146,6 +225,10 @@ export const useWorldStore = create<WorldStore>()(
           break
         }
       }
+
+      // Rembourser la moitié du prix
+      const refundAmount = Math.floor(buildingConfig.cost / 2)
+      useGameStore.getState().addMoney(refundAmount)
 
       // Supprimer toutes les cellules occupées par ce bâtiment
       set(state => {
@@ -250,7 +333,10 @@ export const useWorldStore = create<WorldStore>()(
             ny >= topLeftY &&
             ny < topLeftY + buildingSize[1]
 
-          if (!isSourceCell && grid[ny]?.[nx]?.buildingType !== null) {
+          if (
+            !isSourceCell &&
+            (grid[ny]?.[nx]?.buildingType !== null || grid[ny]?.[nx]?.decorativeObject !== null)
+          ) {
             return false
           }
         }
@@ -304,5 +390,32 @@ export const useWorldStore = create<WorldStore>()(
       set(state => {
         state.grid = newGrid
       }),
+
+    removeDecorativeObject: async (x, y) => {
+      const grid = get().grid
+      const cell = grid[y]?.[x]
+      if (!cell?.decorativeObject) return false
+
+      const decorativeObjectsConfig = await loadDecorativeObjectsConfig()
+      const objectConfig = decorativeObjectsConfig.find(obj => obj.id === cell.decorativeObject)
+      if (!objectConfig) return false
+
+      const money = useGameStore.getState().money
+      if (money < objectConfig.destructionCost) {
+        return false // Pas assez d'argent
+      }
+
+      // Déduire le coût de destruction
+      useGameStore.getState().addMoney(-objectConfig.destructionCost)
+
+      // Supprimer l'objet décoratif
+      set(state => {
+        if (state.grid[y]?.[x]) {
+          state.grid[y][x].decorativeObject = null
+        }
+      })
+
+      return true
+    },
   }))
 )

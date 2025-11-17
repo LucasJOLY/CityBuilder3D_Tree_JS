@@ -1,0 +1,16 @@
+[
+  {
+    "id": "tree",
+    "label": "Arbre",
+    "modelPath": "/models/decorative-objects/tree.glb",
+    "size": [1, 1],
+    "destructionCost": 100
+  },
+  {
+    "id": "rock",
+    "label": "Rocher",
+    "modelPath": "/models/decorative-objects/rock.glb",
+    "size": [2, 2],
+    "destructionCost": 250
+  }
+]

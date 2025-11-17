@@ -1,7 +1,6 @@
 import type { GridCell } from '@/types/domain'
-import { getAllBuildingsOfType } from '@/world/tiles'
+import { getUniqueBuildingsOfType } from '@/world/tiles'
 import { manhattanDistance } from '@/utils/math'
-import type { PolicyConfig } from '@/types/domain'
 import { loadPoliciesConfig } from '@/utils/config-loader'
 
 export interface CityStats {
@@ -22,34 +21,47 @@ export async function calculateCityStats(
   grid: GridCell[][],
   activePolicies: string[]
 ): Promise<CityStats> {
-  const gridSize = grid.length
-  const houses = getAllBuildingsOfType(grid, 'house')
-  const hospitals = getAllBuildingsOfType(grid, 'hospital')
-  const schools = getAllBuildingsOfType(grid, 'school')
-  const police = getAllBuildingsOfType(grid, 'police')
-  const fire = getAllBuildingsOfType(grid, 'fire')
-
-  // Calculate total citizens
+  // Calculate total citizens - chaque cellule compte comme 1, diviser les gains par le nombre de cellules
   const { loadBuildingsConfig } = await import('@/utils/config-loader')
   const buildings = await loadBuildingsConfig()
-  const totalCitizens = houses.reduce((sum, h) => {
-    return sum + (buildings.house?.citizens || 0)
-  }, 0)
 
-  // Calculate capacity
-  const totalHospitalCapacity = hospitals.reduce((sum, h) => {
-    return sum + (buildings.hospital?.capacity || 0)
-  }, 0)
+  // Compter les maisons (chaque cellule compte comme 1)
+  const uniqueHouses = await getUniqueBuildingsOfType(grid, 'house')
+  const houseSize = buildings.house?.size || [1, 1]
+  const houseCellCount = houseSize[0] * houseSize[1]
+  const houseCitizensPerCell = (buildings.house?.citizens || 0) / houseCellCount
+  const houseCitizens = uniqueHouses.length * houseCitizensPerCell
 
-  const totalSchoolCapacity = schools.reduce((sum, s) => {
-    return sum + (buildings.school?.capacity || 0)
-  }, 0)
+  // Compter les appartements (chaque cellule compte comme 1)
+  const uniqueApartments = await getUniqueBuildingsOfType(grid, 'apartment')
+  const apartmentSize = buildings.apartment?.size || [1, 1]
+  const apartmentCellCount = apartmentSize[0] * apartmentSize[1]
+  const apartmentCitizensPerCell = (buildings.apartment?.citizens || 0) / apartmentCellCount
+  const apartmentCitizens = uniqueApartments.length * apartmentCitizensPerCell
 
-  // Calculate coverage
+  const totalCitizens = houseCitizens + apartmentCitizens
+
+  // Calculate capacity - diviser par le nombre de cellules
+  const uniqueHospitals = await getUniqueBuildingsOfType(grid, 'hospital')
+  const hospitalSize = buildings.hospital?.size || [1, 1]
+  const hospitalCellCount = hospitalSize[0] * hospitalSize[1]
+  const hospitalCapacityPerCell = (buildings.hospital?.capacity || 0) / hospitalCellCount
+  const totalHospitalCapacity = uniqueHospitals.length * hospitalCapacityPerCell
+
+  const uniqueSchools = await getUniqueBuildingsOfType(grid, 'school')
+  const schoolSize = buildings.school?.size || [1, 1]
+  const schoolCellCount = schoolSize[0] * schoolSize[1]
+  const schoolCapacityPerCell = (buildings.school?.capacity || 0) / schoolCellCount
+  const totalSchoolCapacity = uniqueSchools.length * schoolCapacityPerCell
+
+  // Calculate coverage - utiliser les bâtiments uniques pour le calcul
+  const uniquePolice = await getUniqueBuildingsOfType(grid, 'police')
+  const uniqueFire = await getUniqueBuildingsOfType(grid, 'fire')
+
   let coveredHouses = 0
-  for (const house of houses) {
+  for (const house of uniqueHouses) {
     let covered = false
-    for (const p of police) {
+    for (const p of uniquePolice) {
       if (manhattanDistance(house.x, house.y, p.x, p.y) <= 12) {
         covered = true
         break
@@ -57,12 +69,12 @@ export async function calculateCityStats(
     }
     if (covered) coveredHouses++
   }
-  const policeCoverage = houses.length > 0 ? (coveredHouses / houses.length) * 100 : 0
+  const policeCoverage = uniqueHouses.length > 0 ? (coveredHouses / uniqueHouses.length) * 100 : 0
 
   coveredHouses = 0
-  for (const house of houses) {
+  for (const house of uniqueHouses) {
     let covered = false
-    for (const f of fire) {
+    for (const f of uniqueFire) {
       if (manhattanDistance(house.x, house.y, f.x, f.y) <= 10) {
         covered = true
         break
@@ -70,7 +82,7 @@ export async function calculateCityStats(
     }
     if (covered) coveredHouses++
   }
-  const fireCoverage = houses.length > 0 ? (coveredHouses / houses.length) * 100 : 0
+  const fireCoverage = uniqueHouses.length > 0 ? (coveredHouses / uniqueHouses.length) * 100 : 0
 
   // Calculate crime (base crime - police coverage - policy effects)
   let baseCrime = 20
@@ -79,7 +91,7 @@ export async function calculateCityStats(
 
   const policies = await loadPoliciesConfig()
   for (const policyId of activePolicies) {
-    const policy = policies.find((p) => p.id === policyId)
+    const policy = policies.find(p => p.id === policyId)
     if (policy?.crimeDelta) {
       baseCrime += policy.crimeDelta
     }
@@ -90,10 +102,10 @@ export async function calculateCityStats(
   // Generate demands
   const demands: string[] = []
   if (totalHospitalCapacity < totalCitizens * 0.8) {
-    demands.push('Pas assez d\'hôpitaux')
+    demands.push("Pas assez d'hôpitaux")
   }
   if (totalSchoolCapacity < totalCitizens * 0.7) {
-    demands.push('Pas assez d\'écoles')
+    demands.push("Pas assez d'écoles")
   }
   if (policeCoverage < 80) {
     demands.push('Couverture policière insuffisante')
@@ -119,4 +131,3 @@ export async function calculateCityStats(
     demands,
   }
 }
-

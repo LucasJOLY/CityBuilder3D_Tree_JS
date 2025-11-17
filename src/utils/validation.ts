@@ -31,17 +31,3 @@ export function canPlaceBuilding(
   return true
 }
 
-export function isInUnlockedZone(
-  x: number,
-  y: number,
-  unlockedZones: Array<{ x: number; y: number; width: number; height: number }>
-): boolean {
-  return unlockedZones.some(
-    (zone) =>
-      x >= zone.x &&
-      x < zone.x + zone.width &&
-      y >= zone.y &&
-      y < zone.y + zone.height
-  )
-}
-

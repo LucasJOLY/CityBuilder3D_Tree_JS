@@ -1,5 +1,5 @@
 import type { GridCell, BuildingType, TileOrientation } from '@/types/domain'
-import { canPlaceBuilding, isInUnlockedZone } from '@/utils/validation'
+import { canPlaceBuilding } from '@/utils/validation'
 import type { BuildingConfig } from '@/types/domain'
 
 export interface PlacementResult {
@@ -13,14 +13,8 @@ export function validatePlacement(
   y: number,
   buildingType: BuildingType,
   buildingConfig: BuildingConfig,
-  gridSize: number,
-  unlockedZones: Array<{ x: number; y: number; width: number; height: number }>
+  gridSize: number
 ): PlacementResult {
-  // Check if position is in unlocked zone
-  if (!isInUnlockedZone(x, y, unlockedZones)) {
-    return { success: false, reason: 'Zone verrouillée' }
-  }
-
   // Check if can place building at this position
   if (
     !canPlaceBuilding(
@@ -86,8 +80,7 @@ export function placeBuilding(
     y,
     buildingType,
     buildingConfig,
-    gridSize,
-    [] // unlockedZones - will be passed from store
+    gridSize
   )
 
   if (!validation.success) {

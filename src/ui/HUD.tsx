@@ -8,7 +8,9 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
+  Divider,
 } from '@mui/material'
+import { useSnackbar } from 'notistack'
 import { useGameStore } from '@/stores/game-store'
 import { useUIStore } from '@/stores/ui-store'
 import { useWorldStore } from '@/stores/world-store'
@@ -16,28 +18,35 @@ import { Button } from './components/Button'
 import { Shop } from './Shop'
 import { Taxes } from './Taxes'
 import { Policies } from './Policies'
-import { Zones } from './Zones'
 import { Admin } from './Admin'
 import { BuildingInfo } from './BuildingInfo'
+import { GameOverModal } from './GameOverModal'
+import { Loans } from './Loans'
 import { saveGame } from '@/utils/save-manager'
 import { calculateMonthlyIncome } from '@/sim/economy'
 import { countBuildings } from '@/world/tiles'
 import { calculateHappiness } from '@/sim/happiness'
 import { calculateCityStats } from '@/sim/citystate'
 import { loadEconomyConfig } from '@/utils/config-loader'
+import { buildingLabels } from '@/utils/building-labels'
+import { MoneyPopover } from './components/MoneyPopover'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import {
   DollarSign,
   Users,
   Heart,
   ShoppingCart,
   Settings,
-  Map,
   Shield,
   Save,
   Clock,
+  Play,
+  Pause,
+  CreditCard,
 } from 'lucide-react'
 
 export function HUD() {
+  const { enqueueSnackbar } = useSnackbar()
   const money = useGameStore(state => state.money)
   const citizens = useGameStore(state => state.citizens)
   const happiness = useGameStore(state => state.happiness)
@@ -48,17 +57,61 @@ export function HUD() {
   const addMoney = useGameStore(state => state.addMoney)
   const setCitizens = useGameStore(state => state.setCitizens)
   const selectedBuilding = useWorldStore(state => state.selectedBuilding)
+  const rotatePlacement = useWorldStore(state => state.rotatePlacement)
 
   const openShop = useUIStore(state => state.openShop)
   const openTaxes = useUIStore(state => state.openTaxes)
   const openPolicies = useUIStore(state => state.openPolicies)
-  const openZones = useUIStore(state => state.openZones)
+  const openLoans = useUIStore(state => state.openLoans)
   const setScreen = useUIStore(state => state.setScreen)
+  const openAdmin = useUIStore(state => state.openAdmin)
+  const isPaused = useUIStore(state => state.isPaused)
+  const togglePause = useUIStore(state => state.togglePause)
+  const setGameOver = useUIStore(state => state.setGameOver)
 
   const [monthTimer, setMonthTimer] = useState(0)
-  const [gameDate, setGameDate] = useState(new Date(2020, 0, 1)) // 1er janvier 2020
+  const gameDateFromStore = useGameStore(state => state.gameDate)
+  const [gameDate, setGameDate] = useState(() => {
+    // Initialiser avec la date du store ou la date par défaut
+    return gameDateFromStore ? new Date(gameDateFromStore) : new Date(2020, 0, 1)
+  })
   const [speed, setSpeed] = useState(3) // Vitesse par défaut : normal (3)
   const [speedAnchorEl, setSpeedAnchorEl] = useState<HTMLElement | null>(null)
+  const [speedAnimation, setSpeedAnimation] = useState(false)
+  const [moneyAnchorEl, setMoneyAnchorEl] = useState<HTMLElement | null>(null)
+  const [projectedIncome, setProjectedIncome] = useState<{
+    revenue: number
+    expenses: number
+    monthlyCosts: number
+    net: number
+  } | null>(null)
+  const setGameDateInStore = useGameStore(state => state.setGameDate)
+
+  // Synchroniser la date du jeu avec le store au démarrage
+  useEffect(() => {
+    if (gameDateFromStore) {
+      setGameDate(new Date(gameDateFromStore))
+    }
+  }, [gameDateFromStore])
+
+  // Calculer les revenus projetés pour le popover
+  useEffect(() => {
+    const updateProjection = async () => {
+      if (grid.length === 0) return
+
+      const buildingCounts = countBuildings(grid)
+      const income = await calculateMonthlyIncome(
+        citizens,
+        currentTax,
+        activePolicies,
+        happiness,
+        buildingCounts
+      )
+      setProjectedIncome(income)
+    }
+
+    updateProjection()
+  }, [currentTax, citizens, activePolicies, happiness, grid])
 
   // Multiplicateurs de vitesse
   const speedMultipliers: Record<number, number> = {
@@ -95,7 +148,26 @@ export function HUD() {
 
       setHappiness(happinessFactors.total)
       setCitizens(cityStats.totalCitizens)
-      addMoney(income.net)
+
+      // Appliquer les revenus/coûts mensuels
+      if (income.revenue > 0) {
+        // Si on a des revenus, les coûts mensuels (20% des revenus) sont déjà déduits dans calculateMonthlyIncome
+        addMoney(income.net)
+      } else {
+        // Si on a 0 revenus, on perd 2% de l'argent total chaque mois
+        const currentMoney = useGameStore.getState().money
+        const monthlyLoss = Math.floor(currentMoney * 0.02) // 2% de l'argent total
+        addMoney(-monthlyLoss)
+      }
+
+      // Note: Les remboursements de prêts sont traités à chaque jour qui passe dans le jeu,
+      // pas seulement lors des mises à jour mensuelles (voir setGameDate ci-dessous)
+
+      // Vérifier si le joueur a perdu (dette de -1000€)
+      const newMoney = useGameStore.getState().money
+      if (newMoney <= -1000) {
+        setGameOver(true)
+      }
     }
 
     const multiplier = speedMultipliers[speed] ?? 1
@@ -104,12 +176,22 @@ export function HUD() {
     const intervalMs = Math.max(50, Math.floor(1000 / multiplier)) // Minimum 50ms pour éviter trop de ticks
 
     const interval = setInterval(async () => {
+      // Ne rien faire si le jeu est en pause
+      if (isPaused) return
+
       const economy = await loadEconomyConfig()
 
       // Incrémenter d'un jour à chaque tick
       setGameDate(prevDate => {
         const newDate = new Date(prevDate)
         newDate.setDate(newDate.getDate() + 1)
+        setGameDateInStore(newDate) // Mettre à jour aussi dans le store
+
+        // Vérifier les remboursements de prêts à chaque jour qui passe
+        // (pour s'assurer que les paiements sont traités au bon moment)
+        const { processLoanPayments } = useGameStore.getState()
+        processLoanPayments()
+
         return newDate
       })
 
@@ -137,25 +219,37 @@ export function HUD() {
     addMoney,
     setCitizens,
     speed,
+    isPaused,
+    setGameOver,
+    setGameDateInStore,
   ])
-
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'a' || e.key === 'A') {
-        openAdmin()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyPress)
-    return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [])
-
-  const openAdmin = useUIStore(state => state.openAdmin)
 
   const handleSave = async () => {
     await saveGame('save_' + Date.now(), 'Sauvegarde ' + new Date().toLocaleString('fr-FR'))
-    alert('Partie sauvegardée !')
+    enqueueSnackbar('Partie sauvegardée !', {
+      variant: 'success',
+      autoHideDuration: 2000,
+    })
   }
+
+  const handleSpeedChange = (newSpeed: number) => {
+    if (newSpeed !== speed) {
+      setSpeedAnimation(true)
+      setSpeed(newSpeed)
+      setTimeout(() => setSpeedAnimation(false), 600) // Durée de l'animation
+    }
+  }
+
+  // Gestion des raccourcis clavier
+  useKeyboardShortcuts({
+    onSave: handleSave,
+    onAdmin: openAdmin,
+    onPause: togglePause,
+    onSpeedChange: handleSpeedChange,
+    currentSpeed: speed,
+    selectedBuilding,
+    onRotatePlacement: rotatePlacement,
+  })
 
   const handleSpeedClick = (event: React.MouseEvent<HTMLElement>) => {
     setSpeedAnchorEl(event.currentTarget)
@@ -166,8 +260,16 @@ export function HUD() {
   }
 
   const handleSpeedSelect = (newSpeed: number) => {
-    setSpeed(newSpeed)
+    handleSpeedChange(newSpeed)
     handleSpeedClose()
+  }
+
+  const handleMoneyClick = (event: React.MouseEvent<HTMLElement>) => {
+    setMoneyAnchorEl(event.currentTarget)
+  }
+
+  const handleMoneyClose = () => {
+    setMoneyAnchorEl(null)
   }
 
   const formatDate = (date: Date) => {
@@ -216,7 +318,7 @@ export function HUD() {
                   }}
                 >
                   <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.dark' }}>
-                    Mode placement: {selectedBuilding}
+                    Mode placement: {buildingLabels[selectedBuilding]}
                   </Typography>
                 </Paper>
               )}
@@ -232,7 +334,9 @@ export function HUD() {
                   borderRadius: 2,
                   transition: 'transform 0.2s',
                   '&:hover': { transform: 'scale(1.05)' },
+                  cursor: 'pointer',
                 }}
+                onClick={handleMoneyClick}
               >
                 <DollarSign className="w-5 h-5" style={{ color: '#16a34a' }} />
                 <Typography variant="body1" sx={{ fontWeight: 700, color: 'success.dark' }}>
@@ -293,13 +397,73 @@ export function HUD() {
                   transition: 'transform 0.2s',
                   '&:hover': { transform: 'scale(1.05)' },
                   cursor: 'pointer',
+                  animation: speedAnimation ? 'speedChange 0.6s ease-out' : 'none',
+                  '@keyframes speedChange': {
+                    '0%': {
+                      transform: 'scale(1)',
+                      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    },
+                    '50%': {
+                      transform: 'scale(1.15) rotate(5deg)',
+                      backgroundColor: 'rgba(245, 158, 11, 0.3)',
+                      boxShadow: '0 4px 20px rgba(245, 158, 11, 0.4)',
+                    },
+                    '100%': {
+                      transform: 'scale(1) rotate(0deg)',
+                      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    },
+                  },
                 }}
                 onClick={handleSpeedClick}
               >
-                <Clock className="w-5 h-5" style={{ color: '#f59e0b' }} />
+                <Clock
+                  className="w-5 h-5"
+                  style={{
+                    color: '#f59e0b',
+                    transition: 'transform 0.3s ease-out',
+                    transform: speedAnimation ? 'rotate(360deg)' : 'rotate(0deg)',
+                  }}
+                />
                 <Typography variant="body1" sx={{ fontWeight: 700, color: 'warning.dark' }}>
                   {formatDate(gameDate)}
                 </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    color: speedAnimation ? 'warning.main' : 'warning.dark',
+                    opacity: 0.8,
+                    ml: 1,
+                    transition: 'all 0.3s ease-out',
+                    transform: speedAnimation ? 'scale(1.3)' : 'scale(1)',
+                  }}
+                >
+                  x{speedMultipliers[speed]}
+                </Typography>
+              </Paper>
+
+              <Paper
+                elevation={1}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: isPaused ? 'success.50' : 'error.50',
+                  px: 1.5,
+                  py: 1,
+                  borderRadius: 2,
+                  transition: 'transform 0.2s, background-color 0.2s',
+                  '&:hover': { transform: 'scale(1.05)' },
+                  cursor: 'pointer',
+                  minWidth: 48,
+                }}
+                onClick={togglePause}
+              >
+                {isPaused ? (
+                  <Play className="w-5 h-5" style={{ color: '#16a34a' }} />
+                ) : (
+                  <Pause className="w-5 h-5" style={{ color: '#dc2626' }} />
+                )}
               </Paper>
             </Box>
 
@@ -317,9 +481,9 @@ export function HUD() {
                 <Shield className="w-4 h-4" style={{ marginRight: '0.5rem' }} />
                 Politiques
               </Button>
-              <Button onClick={openZones} variant="secondary" size="sm">
-                <Map className="w-4 h-4" style={{ marginRight: '0.5rem' }} />
-                Zones
+              <Button onClick={openLoans} variant="secondary" size="sm">
+                <CreditCard className="w-4 h-4" style={{ marginRight: '0.5rem' }} />
+                Prêts
               </Button>
               <Button onClick={handleSave} variant="secondary" size="sm">
                 <Save className="w-4 h-4" style={{ marginRight: '0.5rem' }} />
@@ -348,63 +512,74 @@ export function HUD() {
         sx={{
           mt: 1,
         }}
-      >
-        <Paper
-          sx={{
+        PaperProps={{
+          sx: {
             p: 2,
             minWidth: 200,
             bgcolor: 'background.paper',
             borderRadius: 2,
-            boxShadow: 4,
-          }}
+          },
+        }}
+      >
+        <Typography
+          variant="h6"
+          sx={{ mb: 2, fontWeight: 600, color: 'text.primary', textAlign: 'center' }}
         >
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'text.primary' }}>
-            Vitesse de jeu
-          </Typography>
-          <List sx={{ p: 0 }}>
-            {[1, 2, 3, 4, 5].map(speedLevel => (
-              <ListItem key={speedLevel} disablePadding>
-                <ListItemButton
-                  onClick={() => handleSpeedSelect(speedLevel)}
-                  selected={speed === speedLevel}
-                  sx={{
-                    borderRadius: 1,
-                    '&.Mui-selected': {
-                      bgcolor: 'primary.main',
-                      color: 'primary.contrastText',
-                      '&:hover': {
-                        bgcolor: 'primary.dark',
-                      },
-                    },
+          Vitesse de jeu
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+        <List sx={{ p: 0 }}>
+          {[1, 2, 3, 4, 5].map(speedLevel => (
+            <ListItem key={speedLevel} disablePadding>
+              <ListItemButton
+                onClick={() => handleSpeedSelect(speedLevel)}
+                selected={speed === speedLevel}
+                sx={{
+                  borderRadius: 1,
+                  '&.Mui-selected': {
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
                     '&:hover': {
-                      bgcolor: 'action.hover',
+                      bgcolor: 'primary.dark',
                     },
+                  },
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                  },
+                }}
+              >
+                <ListItemText
+                  primary={speedLabels[speedLevel]}
+                  secondary={`${speedMultipliers[speedLevel]}x`}
+                  primaryTypographyProps={{
+                    fontWeight: speed === speedLevel ? 600 : 400,
                   }}
-                >
-                  <ListItemText
-                    primary={speedLabels[speedLevel]}
-                    secondary={`${speedMultipliers[speedLevel]}x`}
-                    primaryTypographyProps={{
-                      fontWeight: speed === speedLevel ? 600 : 400,
-                    }}
-                    secondaryTypographyProps={{
-                      fontSize: '0.75rem',
-                      color: speed === speedLevel ? 'inherit' : 'text.secondary',
-                    }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </Paper>
+                  secondaryTypographyProps={{
+                    fontSize: '0.75rem',
+                    color: speed === speedLevel ? 'inherit' : 'text.secondary',
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
       </Popover>
+
+      {/* Popover pour les informations financières */}
+      <MoneyPopover
+        anchorEl={moneyAnchorEl}
+        onClose={handleMoneyClose}
+        projectedIncome={projectedIncome}
+        money={money}
+      />
 
       <Shop />
       <Taxes />
       <Policies />
-      <Zones />
+      <Loans />
       <Admin />
       <BuildingInfo />
+      <GameOverModal />
     </>
   )
 }

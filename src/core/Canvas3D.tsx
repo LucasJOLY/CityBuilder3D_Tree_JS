@@ -3,9 +3,12 @@ import { MapControls } from '@react-three/drei'
 import { Suspense, useMemo, useEffect, useState } from 'react'
 import * as THREE from 'three'
 import { useWorldStore } from '@/stores/world-store'
+import { useUIStore } from '@/stores/ui-store'
 import { GridPlane } from './GridPlane'
 import { BuildingMesh } from './BuildingMesh'
+import { DecorativeObjectMesh } from './DecorativeObjectMesh'
 import { PreviewBuilding } from './PreviewBuilding'
+import { Skybox } from './Skybox'
 import { loadBuildingsConfig } from '@/utils/config-loader'
 import type { BuildingConfig } from '@/types/domain'
 
@@ -16,6 +19,7 @@ export function Canvas3D() {
   const isMovingBuilding = useWorldStore(state => state.isMovingBuilding)
   const hoveredCell = useWorldStore(state => state.hoveredCell)
   const placementRotation = useWorldStore(state => state.placementRotation)
+  const skyboxId = useUIStore(state => state.skyboxId)
   const gridSize = grid.length || 50
   const [buildingsConfig, setBuildingsConfig] = useState<Record<string, BuildingConfig> | null>(
     null
@@ -152,6 +156,7 @@ export function Canvas3D() {
   return (
     <Canvas camera={{ position: [25, 30, 25], fov: 75 }} style={{ width: '100%', height: '100%' }}>
       <Suspense fallback={null}>
+        <Skybox skyboxId={skyboxId} />
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} />
         <MapControls
@@ -170,13 +175,29 @@ export function Canvas3D() {
         <GridPlane />
         {buildingsToRender.map(building => (
           <BuildingMesh
-            key={`${building.x}-${building.y}`}
+            key={`building-${building.x}-${building.y}`}
             x={building.x}
             y={building.y}
             type={building.type as any}
             orientation={building.orientation as 0 | 1 | 2 | 3}
           />
         ))}
+        {/* Rendre les objets décoratifs */}
+        {grid.map((row, y) =>
+          row.map((cell, x) => {
+            if (cell.decorativeObject) {
+              return (
+                <DecorativeObjectMesh
+                  key={`decorative-${x}-${y}`}
+                  x={x}
+                  y={y}
+                  type={cell.decorativeObject}
+                />
+              )
+            }
+            return null
+          })
+        )}
         {/* Prévisualisation du bâtiment à placer */}
         {selectedBuilding && hoveredCell && grid.length > 0 && (
           <PreviewBuilding

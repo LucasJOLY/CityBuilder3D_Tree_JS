@@ -22,6 +22,30 @@ export function getAllBuildingsOfType(
   return results
 }
 
+/**
+ * Retourne toutes les cellules d'un type donné.
+ * Chaque cellule compte comme 1 bâtiment, les gains sont divisés par le nombre de cellules.
+ */
+export async function getUniqueBuildingsOfType(
+  grid: GridCell[][],
+  type: BuildingType
+): Promise<Array<{ x: number; y: number; cell: GridCell }>> {
+  const results: Array<{ x: number; y: number; cell: GridCell }> = []
+
+  for (let y = 0; y < grid.length; y++) {
+    const row = grid[y]
+    if (!row) continue
+    for (let x = 0; x < row.length; x++) {
+      const cell = row[x]
+      if (cell && cell.buildingType === type) {
+        results.push({ x, y, cell })
+      }
+    }
+  }
+
+  return results
+}
+
 export function countBuildings(grid: GridCell[][]): Record<BuildingType, number> {
   const counts: Record<string, number> = {
     road: 0,

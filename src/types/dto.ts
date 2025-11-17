@@ -41,19 +41,6 @@ export const GameConfigSchema = z.object({
   startMoney: z.number(),
   startCitizens: z.number(),
   adminCode: z.string(),
-  zonePrices: z.object({
-    small: z.number(),
-    medium: z.number(),
-    large: z.number(),
-  }),
-  unlockedZones: z.array(
-    z.object({
-      x: z.number(),
-      y: z.number(),
-      width: z.number(),
-      height: z.number(),
-    })
-  ),
 })
 
 export function validateBuildingConfig(

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Box, Typography, TextField, Paper, Grid } from '@mui/material'
+import { Box, Typography, TextField, Paper } from '@mui/material'
 import { Modal } from './components/Modal'
 import { Button } from './components/Button'
 import { useUIStore } from '@/stores/ui-store'
@@ -7,19 +7,20 @@ import { useGameStore } from '@/stores/game-store'
 import { loadGameConfig } from '@/utils/config-loader'
 
 export function Admin() {
-  const isOpen = useUIStore((state) => state.isAdminOpen)
-  const closeAdmin = useUIStore((state) => state.closeAdmin)
-  const adminCode = useUIStore((state) => state.adminCode)
-  const setAdminCode = useUIStore((state) => state.setAdminCode)
+  const isOpen = useUIStore(state => state.isAdminOpen)
+  const closeAdmin = useUIStore(state => state.closeAdmin)
+  const adminCode = useUIStore(state => state.adminCode)
+  const setAdminCode = useUIStore(state => state.setAdminCode)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [correctCode, setCorrectCode] = useState('')
 
-  const addMoney = useGameStore((state) => state.addMoney)
-  const addCitizens = useGameStore((state) => state.addCitizens)
-  const setHappiness = useGameStore((state) => state.setHappiness)
+  const addMoney = useGameStore(state => state.addMoney)
+  const setMoney = useGameStore(state => state.setMoney)
+  const addCitizens = useGameStore(state => state.addCitizens)
+  const setHappiness = useGameStore(state => state.setHappiness)
 
   useEffect(() => {
-    loadGameConfig().then((config) => {
+    loadGameConfig().then(config => {
       setCorrectCode(config.adminCode)
     })
   }, [])
@@ -38,6 +39,9 @@ export function Admin() {
       case 'money':
         addMoney(value)
         break
+      case 'moneyRemove':
+        addMoney(-value) // Retirer de l'argent
+        break
       case 'citizens':
         addCitizens(value)
         break
@@ -50,19 +54,15 @@ export function Admin() {
   if (!isOpen) return null
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={closeAdmin}
-      title="Panneau Admin"
-    >
+    <Modal isOpen={isOpen} onClose={closeAdmin} title="Panneau Admin">
       {!isAuthenticated ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
             label="Code d'accès"
             type="password"
             value={adminCode}
-            onChange={(e) => setAdminCode(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmitCode()}
+            onChange={e => setAdminCode(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSubmitCode()}
             placeholder="Entrez le code admin"
             fullWidth
           />
@@ -72,72 +72,71 @@ export function Admin() {
         </Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Paper elevation={1} sx={{ p: 2, border: 2, borderColor: 'grey.300', flex: 1 }}>
+              <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                Argent
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Button onClick={() => handleCheat('money', 500)} size="sm" fullWidth>
+                  +500 €
+                </Button>
+                <Button onClick={() => handleCheat('money', 1000)} size="sm" fullWidth>
+                  +1000 €
+                </Button>
+                <Button
+                  onClick={() => handleCheat('moneyRemove', 500)}
+                  size="sm"
+                  fullWidth
+                  variant="danger"
+                >
+                  -500 €
+                </Button>
+                <Button
+                  onClick={() => handleCheat('moneyRemove', 1000)}
+                  size="sm"
+                  fullWidth
+                  variant="danger"
+                >
+                  -1000 €
+                </Button>
+              </Box>
+            </Paper>
 
+            <Paper elevation={1} sx={{ p: 2, border: 2, borderColor: 'grey.300', flex: 1 }}>
+              <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                Citoyens
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Button onClick={() => handleCheat('citizens', 50)} size="sm" fullWidth>
+                  +50
+                </Button>
+                <Button onClick={() => handleCheat('citizens', 100)} size="sm" fullWidth>
+                  +100
+                </Button>
+                <Button onClick={() => handleCheat('citizens', 500)} size="sm" fullWidth>
+                  +500
+                </Button>
+              </Box>
+            </Paper>
+          </Box>
 
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <Paper elevation={1} sx={{ p: 2, border: 2, borderColor: 'grey.300' }}>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-                  Argent
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Button onClick={() => handleCheat('money', 10000)} size="sm" fullWidth>
-                    +10 000 €
-                  </Button>
-                  <Button onClick={() => handleCheat('money', 50000)} size="sm" fullWidth>
-                    +50 000 €
-                  </Button>
-                  <Button onClick={() => handleCheat('money', 100000)} size="sm" fullWidth>
-                    +100 000 €
-                  </Button>
-                </Box>
-              </Paper>
-            </Grid>
-
-            <Grid item xs={6}>
-              <Paper elevation={1} sx={{ p: 2, border: 2, borderColor: 'grey.300' }}>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-                  Citoyens
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Button onClick={() => handleCheat('citizens', 50)} size="sm" fullWidth>
-                    +50
-                  </Button>
-                  <Button onClick={() => handleCheat('citizens', 100)} size="sm" fullWidth>
-                    +100
-                  </Button>
-                  <Button onClick={() => handleCheat('citizens', 500)} size="sm" fullWidth>
-                    +500
-                  </Button>
-                </Box>
-              </Paper>
-            </Grid>
-
-            <Grid item xs={12}>
-              <Paper elevation={1} sx={{ p: 2, border: 2, borderColor: 'grey.300' }}>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-                  Bonheur
-                </Typography>
-                <Grid container spacing={1}>
-                  <Grid item xs={4}>
-                    <Button onClick={() => handleCheat('happiness', 50)} size="sm" fullWidth>
-                      50%
-                    </Button>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Button onClick={() => handleCheat('happiness', 75)} size="sm" fullWidth>
-                      75%
-                    </Button>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Button onClick={() => handleCheat('happiness', 100)} size="sm" fullWidth>
-                      100%
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Paper>
-            </Grid>
-          </Grid>
+          <Paper elevation={1} sx={{ p: 2, border: 2, borderColor: 'grey.300' }}>
+            <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+              Bonheur
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button onClick={() => handleCheat('happiness', 50)} size="sm" sx={{ flex: 1 }}>
+                50%
+              </Button>
+              <Button onClick={() => handleCheat('happiness', 75)} size="sm" sx={{ flex: 1 }}>
+                75%
+              </Button>
+              <Button onClick={() => handleCheat('happiness', 100)} size="sm" sx={{ flex: 1 }}>
+                100%
+              </Button>
+            </Box>
+          </Paper>
 
           <Button
             onClick={() => {
@@ -154,4 +153,3 @@ export function Admin() {
     </Modal>
   )
 }
-

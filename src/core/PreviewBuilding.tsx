@@ -1,8 +1,10 @@
-import { useMemo, useEffect, useState } from 'react'
-import { Box } from '@react-three/drei'
+import { useMemo, useEffect, useState, Suspense } from 'react'
+import { Box, useGLTF } from '@react-three/drei'
+import * as THREE from 'three'
 import type { BuildingType, TileOrientation } from '@/types/domain'
 import { loadBuildingsConfig } from '@/utils/config-loader'
 import { useWorldStore } from '@/stores/world-store'
+import { buildingModelPaths, hasModel } from './model-loader'
 
 interface PreviewBuildingProps {
   x: number
@@ -147,16 +149,95 @@ export function PreviewBuilding({
   const buildingHeight =
     type === 'road' || type === 'roadTurn' ? 0.1 : Math.max(size[0], size[1]) * 0.5
 
+  // Composant pour charger et afficher un modèle .glb en prévisualisation
+  function PreviewGLTFModel({
+    modelPath,
+    position,
+    rotation,
+    size,
+    isValid,
+  }: {
+    modelPath: string
+    position: [number, number, number]
+    rotation: number
+    size: [number, number]
+    isValid: boolean
+  }) {
+    const { scene } = useGLTF(modelPath)
+
+    // Calculer le bounding box du modèle pour déterminer sa taille réelle
+    const boundingBox = useMemo(() => {
+      const box = new THREE.Box3()
+      const clonedScene = scene.clone()
+      box.setFromObject(clonedScene)
+      return box
+    }, [scene])
+
+    // Calculer le scale pour adapter le modèle à la taille de la grille
+    const modelSize = useMemo(() => {
+      const sizeX = boundingBox.max.x - boundingBox.min.x
+      const sizeZ = boundingBox.max.z - boundingBox.min.z
+      return { x: sizeX || 1, z: sizeZ || 1 }
+    }, [boundingBox])
+
+    // Calculer le scale pour que le modèle s'adapte exactement à la taille demandée
+    const scaleX = size[0] / modelSize.x
+    const scaleZ = size[1] / modelSize.z
+    const scaleY = Math.min(scaleX, scaleZ)
+
+    // Calculer la hauteur pour positionner le modèle correctement
+    // Le modèle doit être posé sur le sol (y=0), donc on utilise le min.y du bounding box
+    const baseHeight = -boundingBox.min.y * scaleY
+
+    // Cloner la scène et appliquer la transparence aux matériaux
+    const clonedScene = scene.clone()
+    clonedScene.traverse((child: any) => {
+      if (child.isMesh && child.material) {
+        child.material = child.material.clone()
+        child.material.transparent = true
+        child.material.opacity = isValid ? 0.7 : 0.5
+      }
+    })
+
+    return (
+      <group position={position} rotation={[0, rotation, 0]}>
+        <primitive
+          object={clonedScene}
+          scale={[scaleX, scaleY, scaleZ]}
+          position={[0, baseHeight, 0]}
+        />
+      </group>
+    )
+  }
+
   return (
     <group>
-      {/* Utiliser Box de drei exactement comme dans createBuildingShape */}
-      <Box
-        args={[size[0], buildingHeight, size[1]]}
-        position={position}
-        rotation={[0, rotation, 0]}
-      >
-        <meshStandardMaterial color={previewColor} transparent opacity={0.5} />
-      </Box>
+      {/* Utiliser le modèle .glb si disponible, sinon utiliser Box */}
+      {hasModel(type) ? (
+        <Suspense
+          fallback={
+            <Box args={[size[0], buildingHeight, size[1]]} position={position}>
+              <meshStandardMaterial color={previewColor} transparent opacity={0.5} />
+            </Box>
+          }
+        >
+          <PreviewGLTFModel
+            modelPath={buildingModelPaths[type]!}
+            position={position}
+            rotation={rotation}
+            size={size}
+            isValid={isValid}
+          />
+        </Suspense>
+      ) : (
+        <Box
+          args={[size[0], buildingHeight, size[1]]}
+          position={position}
+          rotation={[0, rotation, 0]}
+        >
+          <meshStandardMaterial color={previewColor} transparent opacity={0.5} />
+        </Box>
+      )}
       {/* Indicateur de validité au sol */}
       <mesh position={[position[0], 0.02, position[2]]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[size[0], size[1]]} />

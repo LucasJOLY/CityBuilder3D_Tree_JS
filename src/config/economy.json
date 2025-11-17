@@ -1,5 +1,5 @@
 {
-  "baseTaxPerCitizen": 10,
+  "baseTaxPerCitizen": 5,
   "monthDurationSeconds": 30,
   "maintenance": {
     "road": 1,

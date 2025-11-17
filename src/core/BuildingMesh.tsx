@@ -5,6 +5,7 @@ import type { BuildingType, TileOrientation } from '@/types/domain'
 import { loadBuildingsConfig } from '@/utils/config-loader'
 import { createBuildingShape } from './building-factory'
 import { useWorldStore } from '@/stores/world-store'
+import { hasModel } from './model-loader'
 
 interface BuildingMeshProps {
   x: number
@@ -21,7 +22,7 @@ export function BuildingMesh({ x, y, type, orientation }: BuildingMeshProps) {
   const isMovingBuilding = useWorldStore(state => state.isMovingBuilding)
 
   useEffect(() => {
-    loadBuildingsConfig().then((configs) => {
+    loadBuildingsConfig().then(configs => {
       const config = configs[type]
       if (config) {
         setSize(config.size)
@@ -32,16 +33,20 @@ export function BuildingMesh({ x, y, type, orientation }: BuildingMeshProps) {
   const position = useMemo(() => {
     const gridSize = 50
     const offsetX = x - gridSize / 2 + size[0] / 2
-    const height = type === 'road' || type === 'roadTurn' ? 0.05 : Math.max(size[0], size[1]) * 0.25
+    // Pour les modèles GLB, mettre la hauteur à 0 pour qu'ils soient au sol
+    // Pour les cubes, utiliser la hauteur calculée
+    const hasGLBModel = hasModel(type)
+    const height = hasGLBModel
+      ? 0
+      : type === 'road' || type === 'roadTurn'
+      ? 0.05
+      : Math.max(size[0], size[1]) * 0.25
     const offsetZ = y - gridSize / 2 + size[1] / 2
     return [offsetX, height, offsetZ] as [number, number, number]
   }, [x, y, size, type])
 
   const isSelected = useMemo(() => {
-    return (
-      selectedPlacedBuilding?.x === x &&
-      selectedPlacedBuilding?.y === y
-    )
+    return selectedPlacedBuilding?.x === x && selectedPlacedBuilding?.y === y
   }, [selectedPlacedBuilding, x, y])
 
   const handleClick = (e: any) => {
@@ -60,15 +65,15 @@ export function BuildingMesh({ x, y, type, orientation }: BuildingMeshProps) {
   }
 
   return (
-    <group 
-      onClick={handleClick} 
+    <group
+      onClick={handleClick}
       onPointerDown={handlePointerDown}
-      onPointerOver={(e) => {
+      onPointerOver={e => {
         if (!selectedBuilding && !isMovingBuilding) {
           e.stopPropagation()
           document.body.style.cursor = 'pointer'
         }
-      }} 
+      }}
       onPointerOut={() => {
         document.body.style.cursor = 'default'
       }}
@@ -84,4 +89,3 @@ export function BuildingMesh({ x, y, type, orientation }: BuildingMeshProps) {
     </group>
   )
 }
-

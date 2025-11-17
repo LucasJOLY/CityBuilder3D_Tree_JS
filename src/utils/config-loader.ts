@@ -3,6 +3,8 @@ import type {
   PolicyConfig,
   EconomyConfig,
   GameConfig,
+  LoanConfig,
+  DecorativeObjectConfig,
 } from '@/types/domain'
 import {
   validateBuildingConfig,
@@ -15,10 +17,10 @@ let buildingsConfig: Record<string, BuildingConfig> | null = null
 let policiesConfig: PolicyConfig[] | null = null
 let economyConfig: EconomyConfig | null = null
 let gameConfig: GameConfig | null = null
+let loansConfig: LoanConfig[] | null = null
+let decorativeObjectsConfig: DecorativeObjectConfig[] | null = null
 
-export async function loadBuildingsConfig(): Promise<
-  Record<string, BuildingConfig>
-> {
+export async function loadBuildingsConfig(): Promise<Record<string, BuildingConfig>> {
   if (buildingsConfig) return buildingsConfig
 
   const response = await fetch('/src/config/buildings.json')
@@ -58,3 +60,20 @@ export async function loadGameConfig(): Promise<GameConfig> {
   return gameConfig
 }
 
+export async function loadLoansConfig(): Promise<LoanConfig[]> {
+  if (loansConfig) return loansConfig
+
+  const response = await fetch('/src/config/loans.json')
+  const data = await response.json()
+  loansConfig = data
+  return loansConfig!
+}
+
+export async function loadDecorativeObjectsConfig(): Promise<DecorativeObjectConfig[]> {
+  if (decorativeObjectsConfig) return decorativeObjectsConfig
+
+  const response = await fetch('/src/config/decorative-objects.json')
+  const data = await response.json()
+  decorativeObjectsConfig = data
+  return decorativeObjectsConfig!
+}
