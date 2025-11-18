@@ -141,6 +141,10 @@ export function PreviewBuilding({
     park: '#00FF00',
     parkLarge: '#00AA00',
     monument: '#FFD700',
+    skycraper: '#708090',
+    prison: '#2F2F2F',
+    church: '#F5F5DC',
+    bar: '#8B4513',
   }
   const baseColor = buildingColors[type]
   const previewColor = isValid ? baseColor : '#ff0000' // Rouge si conflit

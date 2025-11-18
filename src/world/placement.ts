@@ -11,21 +11,12 @@ export function validatePlacement(
   grid: GridCell[][],
   x: number,
   y: number,
-  buildingType: BuildingType,
+  _buildingType: BuildingType,
   buildingConfig: BuildingConfig,
   gridSize: number
 ): PlacementResult {
   // Check if can place building at this position
-  if (
-    !canPlaceBuilding(
-      grid,
-      x,
-      y,
-      buildingConfig.size[0],
-      buildingConfig.size[1],
-      gridSize
-    )
-  ) {
+  if (!canPlaceBuilding(grid, x, y, buildingConfig.size[0], buildingConfig.size[1], gridSize)) {
     return { success: false, reason: 'Position invalide' }
   }
 
@@ -40,20 +31,17 @@ export function validatePlacement(
   return { success: true }
 }
 
-function checkRoadAccess(
-  grid: GridCell[][],
-  x: number,
-  y: number,
-  gridSize: number
-): boolean {
-  const neighbors = [
+function checkRoadAccess(grid: GridCell[][], x: number, y: number, gridSize: number): boolean {
+  const neighbors: Array<[number, number]> = [
     [x - 1, y],
     [x + 1, y],
     [x, y - 1],
     [x, y + 1],
   ]
 
-  for (const [nx, ny] of neighbors) {
+  for (const neighbor of neighbors) {
+    const [nx, ny] = neighbor
+    if (nx === undefined || ny === undefined) continue
     if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
       const cell = grid[ny]?.[nx]
       if (cell?.buildingType === 'road') {
@@ -74,14 +62,7 @@ export function placeBuilding(
   buildingConfig: BuildingConfig
 ): boolean {
   const gridSize = grid.length
-  const validation = validatePlacement(
-    grid,
-    x,
-    y,
-    buildingType,
-    buildingConfig,
-    gridSize
-  )
+  const validation = validatePlacement(grid, x, y, buildingType, buildingConfig, gridSize)
 
   if (!validation.success) {
     return false
@@ -101,4 +82,3 @@ export function placeBuilding(
 
   return true
 }
-

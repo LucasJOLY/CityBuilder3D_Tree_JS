@@ -40,64 +40,19 @@ npm test
 
 ### Contrôles
 
-- **Clic gauche**: Placer/inspecter
-- **Clic droit + drag**: Déplacer la caméra
-- **Molette**: Zoomer
-- **R**: Rotation (90°)
-- **A**: Menu admin (code: `ADMIN123`)
-- **ESC**: Annuler/fermer
-
-## 📁 Structure du Projet
-
-```
-/src
-  /app          -> Point d'entrée React
-  /core         -> Moteur 3D (Canvas, caméra, raycaster)
-  /world        -> Système de grille et placement
-  /sim          -> Simulation (économie, bonheur, politiques)
-  /ui           -> Composants d'interface utilisateur
-  /config       -> Fichiers JSON de configuration
-  /stores       -> Stores Zustand
-  /types        -> Types TypeScript
-  /utils        -> Utilitaires
-/docs           -> Documentation
-```
+- **Clic gauche** : Placer/inspecter
+- **Clic droit + glisser** : Déplacer la caméra
+- **Molette** : Zoomer/dézoomer
+- **R** : Tourner le bâtiment sélectionné de 90°
+- **A** : Ouvrir le menu admin (code : `ADMIN123`)
+- **S** : Sauvegarder la partie
+- **Espace** : Mettre en pause / reprendre
+- **1**, **2**, **3**, **4**, **5** ou **Pavé numérique 1-5** : Changer la vitesse du jeu (1 à 5)
+  - (Claviers FR : **&**, **é**, **"**, **'**, **(** pour 1-5)
+- **ESC** : Annuler / fermer le menu ou la sélection
 
 ## 🛠️ Technologies
 
 - **React 18** + **TypeScript**
 - **Three.js** via **@react-three/fiber**
 - **Zustand** pour la gestion d'état
-- **Tailwind CSS** pour le styling
-- **Framer Motion** pour les animations
-- **Vite** comme build tool
-
-## 📚 Documentation
-
-- [Architecture](./docs/ARCHITECTURE.md)
-- [Guide UX](./docs/UX_GUIDELINES.md)
-- [Game Design](./docs/GAME_DESIGN.md)
-
-## 🎯 Fonctionnalités
-
-- ✅ Placement de bâtiments sur grille
-- ✅ Rotation des bâtiments (90°)
-- ✅ Système économique (revenus/dépenses mensuels)
-- ✅ Gestion du bonheur des citoyens
-- ✅ Politiques activables
-- ✅ Achat de zones
-- ✅ Sauvegarde/chargement (localStorage)
-- ✅ Menu admin avec cheats
-
-## 🔧 Configuration
-
-Les fichiers de configuration se trouvent dans `/src/config`:
-- `buildings.json`: Types de bâtiments et leurs propriétés
-- `economy.json`: Paramètres économiques
-- `policies.json`: Politiques disponibles
-- `game.json`: Configuration générale du jeu
-
-## 📝 License
-
-Ce projet est un exemple éducatif.
-

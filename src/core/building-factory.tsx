@@ -25,6 +25,10 @@ const buildingColors: Record<BuildingType, string> = {
   park: '#00FF00',
   parkLarge: '#00AA00',
   monument: '#FFD700',
+  skycraper: '#708090',
+  prison: '#2F2F2F',
+  church: '#F5F5DC',
+  bar: '#8B4513',
 }
 
 /**

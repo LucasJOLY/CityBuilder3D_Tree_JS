@@ -36,12 +36,16 @@ export function findPath(
   while (openSet.length > 0) {
     let currentIndex = 0
     for (let i = 1; i < openSet.length; i++) {
-      if (openSet[i].f < openSet[currentIndex].f) {
+      const node = openSet[i]
+      const currentNode = openSet[currentIndex]
+      if (node && currentNode && node.f < currentNode.f) {
         currentIndex = i
       }
     }
 
     const current = openSet.splice(currentIndex, 1)[0]
+    if (!current) break
+
     const currentKey = `${current.x},${current.y}`
     closedSet.add(currentKey)
 
@@ -55,14 +59,16 @@ export function findPath(
       return path
     }
 
-    const neighbors = [
+    const neighbors: Array<[number, number]> = [
       [current.x - 1, current.y],
       [current.x + 1, current.y],
       [current.x, current.y - 1],
       [current.x, current.y + 1],
     ]
 
-    for (const [nx, ny] of neighbors) {
+    for (const neighbor of neighbors) {
+      const [nx, ny] = neighbor
+      if (nx === undefined || ny === undefined) continue
       if (nx < 0 || nx >= gridSize || ny < 0 || ny >= gridSize) continue
 
       const neighborKey = `${nx},${ny}`
@@ -75,7 +81,7 @@ export function findPath(
       const h = manhattanDistance(nx, ny, endX, endY)
       const f = g + h
 
-      const existingNode = openSet.find((n) => n.x === nx && n.y === ny)
+      const existingNode = openSet.find(n => n.x === nx && n.y === ny)
       if (existingNode && g >= existingNode.g) continue
 
       const neighborNode: PathNode = {
@@ -98,17 +104,17 @@ export function findPath(
   return null
 }
 
-export function floodFillRoads(
-  grid: GridCell[][],
-  startX: number,
-  startY: number
-): Set<string> {
+export function floodFillRoads(grid: GridCell[][], startX: number, startY: number): Set<string> {
   const gridSize = grid.length
   const visited = new Set<string>()
   const queue: Array<[number, number]> = [[startX, startY]]
 
   while (queue.length > 0) {
-    const [x, y] = queue.shift()!
+    const coords = queue.shift()
+    if (!coords) break
+    const [x, y] = coords
+    if (x === undefined || y === undefined) continue
+
     const key = `${x},${y}`
 
     if (visited.has(key)) continue
@@ -117,14 +123,16 @@ export function floodFillRoads(
     const cell = grid[y]?.[x]
     if (!cell || cell.buildingType !== 'road') continue
 
-    const neighbors = [
+    const neighbors: Array<[number, number]> = [
       [x - 1, y],
       [x + 1, y],
       [x, y - 1],
       [x, y + 1],
     ]
 
-    for (const [nx, ny] of neighbors) {
+    for (const neighbor of neighbors) {
+      const [nx, ny] = neighbor
+      if (nx === undefined || ny === undefined) continue
       if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
         const neighborKey = `${nx},${ny}`
         if (!visited.has(neighborKey)) {
@@ -136,4 +144,3 @@ export function floodFillRoads(
 
   return visited
 }
-
